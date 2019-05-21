@@ -125,6 +125,12 @@ export class MyComponent implements OnInit {
       });
   }
 }
+
+// 10. in your environment.ts configuration it is necessary to specify the apiURL and the apiRetries
+export const environment = {
+    apiUrl    : '/api', // root URL for your backend
+    apiRetries    : 10 // number of retries while the api gets a 5xx error
+};   
 ```
 
 #### Usage of Forms services in HTML
