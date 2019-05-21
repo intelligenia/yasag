@@ -1,0 +1,76 @@
+{
+  "name": "yasag",
+  "version": "1.0.0",
+  "description": "Yet Another Swagger Angular Generator",
+  "main": "dist/generate.js",
+  "types": "dist/generate.d.ts",
+  "bin": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "start:debug": "node -r ts-node/register --inspect-brk src/index.ts",
+    "prebuild": "rm -r dist",
+    "build": "tsc --outDir dist",
+    "buildwin": "del dist && tsc --outDir dist",
+    "postbuild": "",
+    "preversion": "npm run build",
+    "postversion": "git status",
+    "lint": "tslint -p tsconfig.json",
+    "lint:fix": "tslint -p tsconfig.json --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/intelligenia/yasag.git"
+  },
+  "keywords": [
+    "swagger",
+    "api",
+    "client",
+    "typescript",
+    "generate",
+    "generator",
+    "angular"
+  ],
+  "author": "Jose Carlos Calvo Tudela",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/intelligenia/yasag/issues"
+  },
+  "homepage": "https://github.com/intelligenia/yasag#readme",
+  "dependencies": {
+    "@angular/compiler-cli": "^6.1.1",
+    "commander": "^2.15.1",
+    "lodash": "^4.17.10"
+  },
+  "devDependencies": {
+    "@angular/cli": "^6.0.0-rc.4",
+    "@angular/common": "^5.2.11",
+    "@angular/core": "^5.2.11",
+    "@angular/forms": "^5.2.11",
+    "@angular/http": "^5.2.11",
+    "@angular/platform-browser": "^5.2.11",
+    "@ngrx/effects": "^5.2.0",
+    "@ngrx/store": "^5.2.0",
+    "@types/commander": "^2.12.2",
+    "@types/lodash": "^4.14.110",
+    "@types/node": "^9.6.22",
+    "rxjs": "^5.5.11",
+    "ts-node": "^5.0.1",
+    "tslint": "^5.10.0",
+    "tslint-eslint-rules": "^5.3.1",
+    "typescript": "~2.6.2",
+    "zone.js": "^0.8.26"
+  },
+  "peerDependencies": {
+    "@angular/common": "^5.2.4",
+    "@angular/core": "^5.2.4",
+    "@angular/http": "^5.2.4",
+    "@angular/platform-browser": "^5.2.4",
+    "@ngrx/effects": "^5.1.0",
+    "@ngrx/store": "^5.1.0",
+    "rxjs": "^5.5.0",
+    "zone.js": "^0.8.18"
+  }
+}
