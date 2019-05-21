@@ -226,7 +226,7 @@ generated inside Order.ts, and also both FormServices will be generaqted in /for
 ## Development
 
 * at least Node.js 8 is needed
-* this project is a branch of `swagger-angular-generator` (https://github.com/jnwltr/swagger-angular-generator), 
-  so YASAG could not exists without the initial help of Jan Walter
+* this project is a fork of `swagger-angular-generator` (https://github.com/jnwltr/swagger-angular-generator), 
+  so YASAG could not exist without the initial help of Jan Walter
 
 ### _Pull requests are welcome!_
