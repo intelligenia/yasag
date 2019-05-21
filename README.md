@@ -12,7 +12,7 @@ Generate minimalistic TypeScript API layer for Angular with full type reflection
 ### Interfaces
 - request and response interfaces are created
 
-### Forms services for the HTTP RESTFULL methods
+### Forms services for the HTTP RESTFUL methods
 - Forms can be created by merely importing a service and using it in HTML templates (see below)
 - Supports eventually HTTP Error 500 retrying the call until it works, or reach a configurable number of tries. 
   It is useful to manage temporary Internet disconnections
