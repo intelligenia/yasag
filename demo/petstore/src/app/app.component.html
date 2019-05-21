@@ -1,0 +1,53 @@
+<!--The content below is only a placeholder and can be replaced.-->
+<div>
+  <div style="text-align:center">
+    <h1>Welcome to {{ title }}!</h1>
+    <p>This demo uses the public API published by swagger.io: <a href="http://petstore.swagger.io" target="_blank">http://petstore.swagger.io</a></p>
+  </div>
+
+  <div class="main_block">
+    <div [formGroup]="petListFS.form">
+      <select formControlName="status">
+        <option value="available">Available</option>
+        <option value="pending">Pending</option>
+        <option value="sold">Sold</option>
+      </select>
+      <button (click)="reloadPetList()">Load pet list</button>
+    </div>
+
+    <div *ngIf="(petList$ | async) as petList">
+      <h2>There are {{ petList.length }} pets</h2>
+      <ul>
+        <li *ngFor="let pet of petList">
+          {{ pet.name }} (<span *ngFor="let tag of pet.tags">{{ tag.name }}, </span>)
+          <button (click)="deletePet(pet.id, $event)">Delete</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="main_block">
+    <form [formGroup]="petCreateFS.form.controls['body']" (submit)="false">
+      <input type="text" formControlName="id" placeholder="Pet ID"><br/>
+      <input type="text" formControlName="name" placeholder="Pet name"><br/>
+      <select formControlName="status">
+        <option value="available">Available</option>
+        <option value="pending">Pending</option>
+        <option value="sold">Sold</option>
+      </select><br/>
+      <p>
+        Tags:
+        <button (click)="petCreateFS.addTags()">Add new tag</button>
+      </p>
+      <ul>
+        <li *ngFor="let tag of petCreateFS.form.controls['body']['controls']['tags']['controls']; let i = index"
+            [formGroup]="tag">
+          <input type="text" formControlName="id" placeholder="Tag ID">
+          <input type="text" formControlName="name" placeholder="Tag Name">
+          <button (click)="petCreateFS.removeTags(i)">Remove tag</button>
+        </li>
+      </ul>
+      <button (click)="savePet()">Save</button>
+    </form>
+  </div>
+</div>

@@ -11,26 +11,19 @@ function generateFormService(config, name, params, definitions, simpleName, form
     const formName = 'form';
     const formArrayReset = [];
     const constructor = getConstructor(name, formName, definitions, params, formArrayReset);
+    // Imports
     content += getImports(name, constructor);
+    // Class declaration
     content += `@Injectable()\n`;
     content += `export class ${className}FormService {\n`;
-    Object.keys(method.method.method).forEach(k => {
-        if (k.startsWith('x-')) {
-            content += utils_1.indent(`static ${_.camelCase(k)} = ${JSON.stringify(method.method.method[k])};\n`);
-        }
-    });
-    content += utils_1.indent(`${formName}: FormGroup;\n`);
-    content += utils_1.indent(`defaultValue: any;\n`);
-    content += utils_1.indent(`serverErrors$: Observable<any>;\n`);
-    content += utils_1.indent(`private serverErrorsSubject: ReplaySubject<any>;\n`);
-    content += utils_1.indent(`loading$: Observable<boolean>;\n`);
-    content += utils_1.indent(`private loadingSubject: ReplaySubject<boolean>;\n`);
-    content += utils_1.indent(`currentValue: any;\n`);
-    content += utils_1.indent(`private cache: any;\n`);
-    content += utils_1.indent(`private cacheSub: any;\n`);
+    // Class variables
+    content += getVariables(method, formName);
+    // Constructor and add & remove form methods
     content += constructor;
+    // Submit function
     content += getFormSubmitFunction(name, formName, simpleName, params, methodName, method);
     content += `\n\n`;
+    // Reset function
     content += getFormResetFunction(formName, formArrayReset);
     content += '}\n';
     const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
@@ -57,6 +50,24 @@ function getImports(name, constructor) {
     res += `import { environment } from 'environments/environment';\n`;
     res += '\n';
     return res;
+}
+function getVariables(method, formName) {
+    let content = '';
+    Object.keys(method.method.method).forEach(k => {
+        if (k.startsWith('x-')) {
+            content += utils_1.indent(`static ${_.camelCase(k)} = ${JSON.stringify(method.method.method[k])};\n`);
+        }
+    });
+    content += utils_1.indent(`${formName}: FormGroup;\n`);
+    content += utils_1.indent(`defaultValue: any;\n`);
+    content += utils_1.indent(`serverErrors$: Observable<any>;\n`);
+    content += utils_1.indent(`private serverErrorsSubject: ReplaySubject<any>;\n`);
+    content += utils_1.indent(`loading$: Observable<boolean>;\n`);
+    content += utils_1.indent(`private loadingSubject: ReplaySubject<boolean>;\n`);
+    content += utils_1.indent(`currentValue: any;\n`);
+    content += utils_1.indent(`private cache: any;\n`);
+    content += utils_1.indent(`private cacheSub: any;\n`);
+    return content;
 }
 function getConstructor(name, formName, definitions, params, formArrayReset) {
     let res = utils_1.indent('constructor(\n');
@@ -294,6 +305,9 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         if (method.responseDef.type.indexOf('[]') > 0) {
             res += utils_1.indent(`      subject.next([...val]);\n`, 2);
         }
+        else if (method.responseDef.type === 'string') {
+            res += utils_1.indent(`      subject.next(val);\n`, 2);
+        }
         else {
             res += utils_1.indent(`      subject.next({...val});\n`, 2);
         }
@@ -302,7 +316,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent(`    subject.complete();\n`, 2);
     res += utils_1.indent(`    delete this.cacheSub[JSON.stringify(value)];\n`, 2);
     res += utils_1.indent(`    this.loadingSubject.next(false);\n`, 2);
-    if (method.responseDef.type != 'void') {
+    if (method.responseDef.type !== 'void') {
         res += utils_1.indent(`    return val;\n`, 2);
     }
     res += utils_1.indent(`  }),\n`, 2);

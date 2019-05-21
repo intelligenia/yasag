@@ -8,6 +8,9 @@ const utils_1 = require("./utils");
  * @param prop property definition
  * @param name property name
  * @param namespace usage context for type name uniqueness
+ * @param required
+ * @param exportEnums
+ * @param nameModel
  */
 function processProperty(prop, name = '', namespace = '', required = false, exportEnums = true, nameModel = "") {
     let type;

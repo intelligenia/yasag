@@ -4,6 +4,11 @@ const path = require("path");
 const conf = require("../conf");
 const utils_1 = require("../utils");
 const _ = require("lodash");
+/**
+ * Creates the global Module that includes each and every single Module
+ * @param config: global configuration for YASAG
+ * @param modules: the list of generated modules
+ */
 function createFormsModule(config, modules) {
     let content = '';
     content += `import {NgModule} from '@angular/core';\n`;

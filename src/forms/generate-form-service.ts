@@ -364,6 +364,8 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
 
     if ( method.responseDef.type.indexOf('[]') > 0 ) {
       res += indent(`      subject.next([...val]);\n`, 2);
+    } else if ( method.responseDef.type === 'string' ) {
+      res += indent(`      subject.next(val);\n`, 2);
     } else {
       res += indent(`      subject.next({...val});\n`, 2);
     }
@@ -373,7 +375,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent(`    subject.complete();\n`, 2);
   res += indent(`    delete this.cacheSub[JSON.stringify(value)];\n`, 2);
   res += indent(`    this.loadingSubject.next(false);\n`, 2);
-  if ( method.responseDef.type != 'void' ) {
+  if ( method.responseDef.type !== 'void' ) {
     res += indent(`    return val;\n`, 2);
   }
   res += indent(`  }),\n`, 2);

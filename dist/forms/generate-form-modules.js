@@ -12,11 +12,22 @@ function getClassName(name) {
     return _.upperFirst(name);
 }
 exports.getClassName = getClassName;
+/**
+ * Creates the structure of the folder /forms/{name}. Being {name} a swagger tag
+ * Inside this folder it creates another folder for each endpoint of the corresponding tag
+ * Finally, inside the endpoint folder it is created a FormService and its corresponding Module
+ * @param config: global configuration for YASAG
+ * @param name: tag name
+ * @param processedMethods: endpoints of this tag
+ * @param definitions
+ */
 function createForms(config, name, processedMethods, definitions) {
+    // Creating the tag folder
     const kebabName = _.kebabCase(name);
     const formBaseDir = path.join(config.dest, conf.storeDir);
     const formDirName = path.join(formBaseDir, `${kebabName}`);
     utils_1.createDir(formDirName);
+    // Crerating each endpoint folder
     for (const processedMethod of processedMethods) {
         const paramGroups = processedMethod.paramGroups;
         const simpleName = processedMethod.simpleName;

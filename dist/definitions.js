@@ -47,6 +47,7 @@ exports.writeToBaseModelFile = writeToBaseModelFile;
  * Creates the file of the type definition
  * @param def type definition
  * @param name name of the type definition and after normalization of the resulting interface + file
+ * @param config
  */
 function processDefinition(def, name, config) {
     if (!isWritable(name))
@@ -83,7 +84,7 @@ function createExport(def) {
 exports.createExport = createExport;
 /**
  * Creates comment naming source definitions for the export
- * @param def name of the definition file w/o extension
+ * @param file
  * @param sources list of sources for the file
  */
 function createExportComments(file, sources) {

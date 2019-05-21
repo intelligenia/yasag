@@ -33,6 +33,8 @@ function processParams(def, paramsType) {
     return { paramDef, typesOnly, usesGlobalType, isInterfaceEmpty };
 }
 exports.processParams = processParams;
+// TODO! use required array to set the variable
+// TODO might be unnecessary for v3.0+ of OpenAPI spec
 // https://swagger.io/specification/#parameterObject
 function parameterToSchema(param) {
     return Object.assign({
