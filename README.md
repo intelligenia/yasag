@@ -12,7 +12,7 @@ Generate minimalistic TypeScript API layer for Angular with full type reflection
 ### Interfaces
 - request and response interfaces are created
 
-### Forms services for the HTTP RESTFULL methods
+### Forms services for the HTTP RESTFUL methods
 - Forms can be created by merely importing a service and using it in HTML templates (see below)
 - Supports eventually HTTP Error 500 retrying the call until it works, or reach a configurable number of tries. 
   It is useful to manage temporary Internet disconnections
@@ -26,7 +26,7 @@ Generate minimalistic TypeScript API layer for Angular with full type reflection
 - FormServices support FormArray structures automatically
 
 ## Install
-`npm i YASAG --save-dev`
+`npm i yasag --save-dev`
 
 ## Options
 `-s`, `--src` - source directory
@@ -226,7 +226,21 @@ generated inside Order.ts, and also both FormServices will be generaqted in /for
 ## Development
 
 * at least Node.js 8 is needed
-* this project is a branch of `swagger-angular-generator` (https://github.com/jnwltr/swagger-angular-generator), 
-  so YASAG could not exists without the initial help of Jan Walter
+* this project is a fork of `swagger-angular-generator` (https://github.com/jnwltr/swagger-angular-generator), 
+  so YASAG could not exist without the initial help of Jan Walter
+
+
+## Demo APP
+
+In the folder `/demo/petstore` you can find a complete Angular demo using the public API published by swagger.io 
+on http://petstore.swagger.io
+
+The swagger JSON schema has been downloaded on the folder `/demo/petstore/swagger`
+
+To generate the API connection files using YASAG, follow the next steps:
+
+1. Go to the folder `/demo/petstore`
+1. Execute the command `npm run apigen`
+1. Now you can execute `npm run start` to try the demo
 
 ### _Pull requests are welcome!_
