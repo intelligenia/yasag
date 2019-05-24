@@ -13,9 +13,7 @@
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import { environment } from 'environments/environment';
-
-const API_URL = environment.apiUrl;
+import { APIConfigService } from '../apiconfig.service';
 
 import * as __model from '../model';
 
@@ -60,7 +58,10 @@ export interface DeleteUserParams {
 
 @Injectable()
 export class UserService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiConfigService: APIConfigService) {}
+
 
   /**
    * Create user
@@ -75,7 +76,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(API_URL + `/v2/user`, bodyParamsWithoutUndefined);
+    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -90,7 +91,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(API_URL + `/v2/user/createWithArray`, bodyParamsWithoutUndefined);
+    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -105,7 +106,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(API_URL + `/v2/user/createWithList`, bodyParamsWithoutUndefined);
+    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -130,7 +131,7 @@ export class UserService {
       }
     });
 
-    return this.http.get<string>(API_URL + `/v2/user/login`, {params: queryParams});
+    return this.http.get<string>(this.apiConfigService.options.apiUrl + `/v2/user/login`, {params: queryParams});
   }
 
   /**
@@ -138,7 +139,7 @@ export class UserService {
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/logoutUser
    */
   logout(): Observable<void> {
-    return this.http.get<void>(API_URL + `/v2/user/logout`);
+    return this.http.get<void>(this.apiConfigService.options.apiUrl + `/v2/user/logout`);
   }
 
   /**
@@ -149,7 +150,7 @@ export class UserService {
     const pathParams = {
       username: params.username,
     };
-    return this.http.get<__model.User>(API_URL + `/v2/user/${pathParams.username}`);
+    return this.http.get<__model.User>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`);
   }
 
   /**
@@ -168,7 +169,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<void>(API_URL + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined);
+    return this.http.put<void>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -180,6 +181,6 @@ export class UserService {
     const pathParams = {
       username: params.username,
     };
-    return this.http.delete<void>(API_URL + `/v2/user/${pathParams.username}`);
+    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`);
   }
 }

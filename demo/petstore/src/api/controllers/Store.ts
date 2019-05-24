@@ -13,9 +13,7 @@
 import {HttpClient} from '@angular/common/http';
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import { environment } from 'environments/environment';
-
-const API_URL = environment.apiUrl;
+import { APIConfigService } from '../apiconfig.service';
 
 import * as __model from '../model';
 
@@ -42,7 +40,10 @@ export interface DeleteOrderParams {
 
 @Injectable()
 export class StoreService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiConfigService: APIConfigService) {}
+
 
   /**
    * Returns pet inventories by status
@@ -50,7 +51,7 @@ export class StoreService {
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/getInventory
    */
   inventory(): Observable<{[key: string]: number}> {
-    return this.http.get<{[key: string]: number}>(API_URL + `/v2/store/inventory`);
+    return this.http.get<{[key: string]: number}>(this.apiConfigService.options.apiUrl + `/v2/store/inventory`);
   }
 
   /**
@@ -65,7 +66,7 @@ export class StoreService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<__model.Order>(API_URL + `/v2/store/order`, bodyParamsWithoutUndefined);
+    return this.http.post<__model.Order>(this.apiConfigService.options.apiUrl + `/v2/store/order`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -77,7 +78,7 @@ export class StoreService {
     const pathParams = {
       orderId: params.orderId,
     };
-    return this.http.get<__model.Order>(API_URL + `/v2/store/order/${pathParams.orderId}`);
+    return this.http.get<__model.Order>(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`);
   }
 
   /**
@@ -89,6 +90,6 @@ export class StoreService {
     const pathParams = {
       orderId: params.orderId,
     };
-    return this.http.delete<void>(API_URL + `/v2/store/order/${pathParams.orderId}`);
+    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`);
   }
 }

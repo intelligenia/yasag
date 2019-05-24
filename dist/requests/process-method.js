@@ -54,7 +54,7 @@ function processMethod(method, unwrapSingleParamMethods) {
     if (paramSeparation.length)
         methodDef += '\n';
     /* tslint:disable-next-line:max-line-length */
-    const body = `return this.http.${method.methodName}<${method.responseDef.type}>(API_URL + \`${method.basePath}${url}\`${params});`;
+    const body = `return this.http.${method.methodName}<${method.responseDef.type}>(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
     methodDef += utils_1.indent(body);
     methodDef += `\n`;
     methodDef += `}`;

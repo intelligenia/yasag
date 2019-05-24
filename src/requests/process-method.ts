@@ -61,7 +61,7 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
   if (paramSeparation.length) methodDef += '\n';
 
   /* tslint:disable-next-line:max-line-length */
-  const body = `return this.http.${method.methodName}<${method.responseDef.type}>(API_URL + \`${method.basePath}${url}\`${params});`;
+  const body = `return this.http.${method.methodName}<${method.responseDef.type}>(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
   methodDef += indent(body);
   methodDef += `\n`;
   methodDef += `}`;
@@ -134,7 +134,7 @@ function getParamSeparation(paramGroups: Dictionary<Parameter[]>): string[] {
       def += '    if (typeof value === \'string\') {\n';
       def += '      queryParams = queryParams.set(key, value);\n';
       def += '    }\n';
-      def += '    else {\n'
+      def += '    else {\n';
       def += '      queryParams = queryParams.set(key, JSON.stringify(value));\n';
       def += '    }\n';
       def += '  }\n';

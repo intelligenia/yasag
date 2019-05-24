@@ -20,10 +20,9 @@ import {ControllerMethod, MethodOutput} from './requests.models';
  * @param name
  * @param config
  * @param definitions
- * @param environmentAPI
  */
 export function processController(methods: ControllerMethod[], name: string, config: Config,
-                                  definitions: ProcessedDefinition[], environmentAPI: string) {
+                                  definitions: ProcessedDefinition[]) {
   const filename = path.join(config.dest, conf.apiDir, `${name}.ts`);
   let usesGlobalType = false;
 
@@ -52,8 +51,7 @@ export function processController(methods: ControllerMethod[], name: string, con
 
   content += 'import {Injectable} from \'@angular/core\';\n';
   content += 'import {Observable} from \'rxjs\';\n';
-  content += 'import { environment } from \'environments/environment\';\n\n';
-  content += 'const API_URL = environment.'+environmentAPI+';\n\n';
+  content += 'import { APIConfigService } from \'../apiconfig.service\';\n\n';
 
   if (usesGlobalType) {
     content += `import * as __${conf.modelFile} from \'../${conf.modelFile}\';\n\n`;
@@ -67,7 +65,9 @@ export function processController(methods: ControllerMethod[], name: string, con
 
   content += `@Injectable()\n`;
   content += `export class ${name}Service {\n`;
-  content += indent('constructor(private http: HttpClient) {}');
+  content += indent('constructor(\n');
+  content += indent('private http: HttpClient,\n', 2);
+  content += indent('private apiConfigService: APIConfigService) {}\n', 2);
   content += '\n';
   content += indent(_.map(processedMethods, 'methodDef').join('\n\n'));
   content += '\n}\n';

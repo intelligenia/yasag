@@ -17,9 +17,8 @@ const process_responses_1 = require("./process-responses");
  * @param name
  * @param config
  * @param definitions
- * @param environmentAPI
  */
-function processController(methods, name, config, definitions, environmentAPI) {
+function processController(methods, name, config, definitions) {
     const filename = path.join(config.dest, conf.apiDir, `${name}.ts`);
     let usesGlobalType = false;
     // make simpleNames unique and process responses
@@ -42,8 +41,7 @@ function processController(methods, name, config, definitions, environmentAPI) {
     content += `import {${angularCommonHttp.join(', ')}} from \'@angular/common/http\';\n`;
     content += 'import {Injectable} from \'@angular/core\';\n';
     content += 'import {Observable} from \'rxjs\';\n';
-    content += 'import { environment } from \'environments/environment\';\n\n';
-    content += 'const API_URL = environment.' + environmentAPI + ';\n\n';
+    content += 'import { APIConfigService } from \'../apiconfig.service\';\n\n';
     if (usesGlobalType) {
         content += `import * as __${conf.modelFile} from \'../${conf.modelFile}\';\n\n`;
     }
@@ -54,7 +52,9 @@ function processController(methods, name, config, definitions, environmentAPI) {
     }
     content += `@Injectable()\n`;
     content += `export class ${name}Service {\n`;
-    content += utils_1.indent('constructor(private http: HttpClient) {}');
+    content += utils_1.indent('constructor(\n');
+    content += utils_1.indent('private http: HttpClient,\n', 2);
+    content += utils_1.indent('private apiConfigService: APIConfigService) {}\n', 2);
     content += '\n';
     content += utils_1.indent(_.map(processedMethods, 'methodDef').join('\n\n'));
     content += '\n}\n';

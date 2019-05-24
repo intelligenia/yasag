@@ -10,6 +10,7 @@ const process_controller_1 = require("./process-controller");
 const forms_module_1 = require("../forms/forms-module");
 const path = require("path");
 const utils_1 = require("../utils");
+const config_service_1 = require("./config-service");
 /**
  * Entry point, processes all possible api requests and exports them
  * to files devided ty controllers (same as swagger web app sections)
@@ -39,7 +40,7 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     }))));
     const controllerFiles = _.groupBy(controllers, 'name');
     conf.controllerIgnores.forEach(key => delete controllerFiles[key]);
-    _.forEach(controllerFiles, (methods, name) => process_controller_1.processController(methods, name.replace('[', '').replace(']', ''), config, definitions, environmentAPI));
+    _.forEach(controllerFiles, (methods, name) => process_controller_1.processController(methods, name.replace('[', '').replace(']', ''), config, definitions));
     const modules = [];
     _.forEach(_.groupBy(controllers, 'name'), (_methods, name) => { modules.push(name); });
     // Create global module for forms
@@ -48,6 +49,8 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     controllers.forEach(method => content += `export * from './forms/${_.kebabCase(method.name)}/${method.simpleName}/${method.simpleName}.service';\n`);
     const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
     utils_1.writeFile(allFormServiceFileName, content, config.header);
+    // apiconfig.service.ts
+    config_service_1.createConfigService(config, environmentAPI);
 }
 exports.processPaths = processPaths;
 /**

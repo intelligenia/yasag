@@ -12,6 +12,7 @@ import {ControllerMethod, Paths, PathsWithParameters} from './requests.models';
 import {createFormsModule} from '../forms/forms-module';
 import * as path from "path";
 import {writeFile} from "../utils";
+import {createConfigService} from './config-service';
 
 /**
  * Entry point, processes all possible api requests and exports them
@@ -48,7 +49,7 @@ export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPa
 
   const controllerFiles = _.groupBy(controllers, 'name');
   conf.controllerIgnores.forEach(key => delete controllerFiles[key]);
-  _.forEach(controllerFiles, (methods, name) => processController(methods, name.replace('[','').replace(']',''), config, definitions, environmentAPI));
+  _.forEach(controllerFiles, (methods, name) => processController(methods, name.replace('[','').replace(']',''), config, definitions));
 
   const modules: string[] = [];
   _.forEach(_.groupBy(controllers, 'name'), (_methods, name) => { modules.push(name); });
@@ -61,6 +62,8 @@ export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPa
   );
   const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
   writeFile(allFormServiceFileName, content, config.header);
+  // apiconfig.service.ts
+  createConfigService(config, environmentAPI);
 
 }
 

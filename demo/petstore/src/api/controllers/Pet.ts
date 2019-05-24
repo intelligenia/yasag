@@ -13,9 +13,7 @@
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import { environment } from 'environments/environment';
-
-const API_URL = environment.apiUrl;
+import { APIConfigService } from '../apiconfig.service';
 
 import * as __model from '../model';
 
@@ -86,7 +84,10 @@ export interface UploadImageParams {
 
 @Injectable()
 export class PetService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private apiConfigService: APIConfigService) {}
+
 
   /**
    * Add a new pet to the store
@@ -100,7 +101,7 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(API_URL + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -115,7 +116,7 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<void>(API_URL + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.put<void>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -140,7 +141,7 @@ export class PetService {
       }
     });
 
-    return this.http.get<__model.Pet[]>(API_URL + `/v2/pet/findByStatus`, {params: queryParams});
+    return this.http.get<__model.Pet[]>(this.apiConfigService.options.apiUrl + `/v2/pet/findByStatus`, {params: queryParams});
   }
 
   /**
@@ -165,7 +166,7 @@ export class PetService {
       }
     });
 
-    return this.http.get<__model.Pet[]>(API_URL + `/v2/pet/findByTags`, {params: queryParams});
+    return this.http.get<__model.Pet[]>(this.apiConfigService.options.apiUrl + `/v2/pet/findByTags`, {params: queryParams});
   }
 
   /**
@@ -177,7 +178,7 @@ export class PetService {
     const pathParams = {
       petId: params.petId,
     };
-    return this.http.get<__model.Pet>(API_URL + `/v2/pet/${pathParams.petId}`);
+    return this.http.get<__model.Pet>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
   }
 
   /**
@@ -192,7 +193,7 @@ export class PetService {
       name: params.name,
       status: params.status,
     };
-    return this.http.post<void>(API_URL + `/v2/pet/${pathParams.petId}`, formDataParams);
+    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams);
   }
 
   /**
@@ -203,7 +204,7 @@ export class PetService {
     const pathParams = {
       petId: params.petId,
     };
-    return this.http.delete<void>(API_URL + `/v2/pet/${pathParams.petId}`);
+    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
   }
 
   /**
@@ -218,6 +219,6 @@ export class PetService {
       additionalMetadata: params.additionalMetadata,
       file: params.file,
     };
-    return this.http.post<__model.ApiResponse>(API_URL + `/v2/pet/${pathParams.petId}/uploadImage`, formDataParams);
+    return this.http.post<__model.ApiResponse>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}/uploadImage`, formDataParams);
   }
 }
