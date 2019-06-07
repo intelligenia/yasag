@@ -54,7 +54,7 @@ export class PetUpdatePetFormService {
     this.cacheSub = {};
   }
 
-  public addTags( tags: number = 1, position?: number): void {
+  public addBodyTags( tags: number = 1, position?: number): void {
     const control = <FormArray>this.form['controls']['body']['controls']['tags'];
     for (let i = 0; i < tags; i++) {
       const fg = new FormGroup({
@@ -69,7 +69,7 @@ export class PetUpdatePetFormService {
     }
   }
 
-  public removeTags( i: number): void {
+  public removeBodyTags( i: number): void {
     const control = <FormArray>this.form['controls']['body']['controls']['tags'];
     control.removeAt(i);
   }

@@ -132,7 +132,7 @@ function walkParamOrProp(definition: Parameter[] | ProcessedDefinition, path: st
                          definitions: _.Dictionary<ProcessedDefinition[]>, parentTypes: string[],
                          control: string, formArrayMethods: string[], formValue: string, formValueIF: string,
                          formArrayReset: string[], formArrayParams: string = '',
-                         subArrayReset: string[] = [], parent: string = '', parents: string = ''): string {
+                         subArrayReset: string[] = [], parent: string = '', parents: string = '', nameParents: string = ''): string {
   const res: string[] = [];
   let schema: Record<string, Schema>;
   let required: string[];
@@ -170,7 +170,7 @@ function walkParamOrProp(definition: Parameter[] | ProcessedDefinition, path: st
       const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes,
         `${control}['controls']['${name}']`, formArrayMethods,
         formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset,
-        formArrayParams, subArrayReset, parent, parents);
+        formArrayParams, subArrayReset, parent, parents, nameParents);
 
       res.push(fieldDefinition);
     }
@@ -183,7 +183,8 @@ function makeField(param: Schema, ref: string,
                    name: string, path: string[], required: boolean,
                    definitions: _.Dictionary<ProcessedDefinition[]>, parentTypes: string[],
                    formControl: string, formArrayMethods: string[], formValue: string, formValueIF: string,
-                   formArrayReset: string[], formArrayParams: string, subArrayReset: string[], parent: string, parents: string): string {
+                   formArrayReset: string[], formArrayParams: string, subArrayReset: string[], parent: string,
+                   parents: string, nameParents: string = ''): string {
 
   let definition: ProcessedDefinition;
   let type = param.type;
@@ -206,12 +207,13 @@ function makeField(param: Schema, ref: string,
         definition = definitions[normalizeDef(refType)][0];
         const mySubArrayReset: string[] = [];
         const fields = walkParamOrProp(definition, path, definitions, parentTypes,
-          formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset,
-          formArrayParams + name + ': number' + ', ', mySubArrayReset, name, parents + name + ', ');
+          formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF,
+          formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name,
+          parents + name + ', ', nameParents + _.upperFirst(name));
         control = 'FormArray';
         initializer = `[]`;
         let addMethod: string = '';
-        addMethod += indent(`public add${_.upperFirst(name)}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+        addMethod += indent(`public add${nameParents}${_.upperFirst(name)}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
         addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         addMethod += indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
         addMethod += indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
@@ -225,7 +227,7 @@ function makeField(param: Schema, ref: string,
         formArrayMethods.push(addMethod);
 
         let removeMethod: string = '';
-        removeMethod += indent(`public remove${_.upperFirst(name)}(${formArrayParams} i: number): void {\n`);
+        removeMethod += indent(`public remove${nameParents}${_.upperFirst(name)}(${formArrayParams} i: number): void {\n`);
         removeMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         removeMethod += indent(`control.removeAt(i);\n`, 2);
         removeMethod += indent(`}\n`);
@@ -268,7 +270,7 @@ function makeField(param: Schema, ref: string,
     control = 'FormGroup';
     const fields = walkParamOrProp(definition, path, definitions, parentTypes,
       formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams,
-      subArrayReset, parent, parents);
+      subArrayReset, parent, parents, nameParents + _.upperFirst(name));
     initializer = `{\n${fields}\n}`;
   }
 

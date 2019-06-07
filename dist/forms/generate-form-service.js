@@ -93,7 +93,7 @@ function getConstructor(name, formName, definitions, params, formArrayReset) {
     }
     return res;
 }
-function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams = '', subArrayReset = [], parent = '', parents = '') {
+function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams = '', subArrayReset = [], parent = '', parents = '', nameParents = '') {
     const res = [];
     let schema;
     let required;
@@ -126,13 +126,13 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
         if (ref)
             newParentTypes = [...parentTypes, ref];
         if (!param.readOnly || name == 'id') {
-            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes, `${control}['controls']['${name}']`, formArrayMethods, formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset, formArrayParams, subArrayReset, parent, parents);
+            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes, `${control}['controls']['${name}']`, formArrayMethods, formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents);
             res.push(fieldDefinition);
         }
     });
     return utils_1.indent(res);
 }
-function makeField(param, ref, name, path, required, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents) {
+function makeField(param, ref, name, path, required, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents = '') {
     let definition;
     let type = param.type;
     let control;
@@ -152,11 +152,11 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                 const refType = param.items.$ref.replace(/^#\/definitions\//, '');
                 definition = definitions[common_1.normalizeDef(refType)][0];
                 const mySubArrayReset = [];
-                const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name, parents + name + ', ');
+                const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name, parents + name + ', ', nameParents + _.upperFirst(name));
                 control = 'FormArray';
                 initializer = `[]`;
                 let addMethod = '';
-                addMethod += utils_1.indent(`public add${_.upperFirst(name)}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+                addMethod += utils_1.indent(`public add${nameParents}${_.upperFirst(name)}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
                 addMethod += utils_1.indent(`const control = <FormArray>${formControl};\n`, 2);
                 addMethod += utils_1.indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
                 addMethod += utils_1.indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
@@ -169,7 +169,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                 addMethod += utils_1.indent(`}\n`);
                 formArrayMethods.push(addMethod);
                 let removeMethod = '';
-                removeMethod += utils_1.indent(`public remove${_.upperFirst(name)}(${formArrayParams} i: number): void {\n`);
+                removeMethod += utils_1.indent(`public remove${nameParents}${_.upperFirst(name)}(${formArrayParams} i: number): void {\n`);
                 removeMethod += utils_1.indent(`const control = <FormArray>${formControl};\n`, 2);
                 removeMethod += utils_1.indent(`control.removeAt(i);\n`, 2);
                 removeMethod += utils_1.indent(`}\n`);
@@ -211,7 +211,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
         const refType = ref.replace(/^#\/definitions\//, '');
         definition = definitions[common_1.normalizeDef(refType)][0];
         control = 'FormGroup';
-        const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents);
+        const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents + _.upperFirst(name));
         initializer = `{\n${fields}\n}`;
     }
     const validators = getValidators(param);
