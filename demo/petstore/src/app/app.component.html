@@ -38,14 +38,14 @@
       </select><br/>
       <p>
         Tags:
-        <button (click)="petCreateFS.addTags()">Add new tag</button>
+        <button (click)="petCreateFS.addBodyTags()">Add new tag</button>
       </p>
       <ul>
         <li *ngFor="let tag of petCreateFS.form.controls['body']['controls']['tags']['controls']; let i = index"
             [formGroup]="tag">
           <input type="text" formControlName="id" placeholder="Tag ID">
           <input type="text" formControlName="name" placeholder="Tag Name">
-          <button (click)="petCreateFS.removeTags(i)">Remove tag</button>
+          <button (click)="petCreateFS.removeBodyTags(i)">Remove tag</button>
         </li>
       </ul>
       <button (click)="savePet()">Save</button>
