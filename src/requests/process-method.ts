@@ -133,8 +133,14 @@ function getParamSeparation(paramGroups: Dictionary<Parameter[]>): string[] {
       def += '  if (value !== undefined && value !== null) {\n';
       def += '    if (typeof value === \'string\') {\n';
       def += '      queryParams = queryParams.set(key, value);\n';
-      def += '    }\n';
-      def += '    else {\n';
+      def += '    } else if(Array.isArray(value)){\n';
+      def += '      let val = \'\';\n';
+      def += '      value.forEach(v => val += v + \',\');\n';
+      def += '      if (val.length >0) {\n';
+      def += '        val = val.slice(0, val.length-1);\n';
+      def += '      }\n';
+      def += '      queryParams = queryParams.set(key, val);\n';
+      def += '    } else {\n';
       def += '      queryParams = queryParams.set(key, JSON.stringify(value));\n';
       def += '    }\n';
       def += '  }\n';
