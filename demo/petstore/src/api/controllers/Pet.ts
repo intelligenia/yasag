@@ -132,15 +132,15 @@ export class PetService {
     let queryParams = new HttpParams();
     Object.entries(queryParamBase).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (typeof value === 'string') {
-          queryParams = queryParams.set(key, value);
-        } else if (Array.isArray(value)) {
+        if (Array.isArray(value)) {
           let val = '';
           value.forEach(v => val += v + ',');
-          if (val.length >0) {
+          if (val.length > 0 ) {
             val = val.slice(0, val.length - 1);
           }
           queryParams = queryParams.set(key, val);
+        } else if (typeof value === 'string') {
+          queryParams = queryParams.set(key, value);
         } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }
@@ -163,15 +163,15 @@ export class PetService {
     let queryParams = new HttpParams();
     Object.entries(queryParamBase).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (typeof value === 'string') {
-          queryParams = queryParams.set(key, value);
-        } else if (Array.isArray(value)) {
+        if (Array.isArray(value)) {
           let val = '';
           value.forEach(v => val += v + ',');
-          if (val.length >0) {
+          if (val.length > 0 ) {
             val = val.slice(0, val.length - 1);
           }
           queryParams = queryParams.set(key, val);
+        } else if (typeof value === 'string') {
+          queryParams = queryParams.set(key, value);
         } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }

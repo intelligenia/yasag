@@ -209,11 +209,11 @@ function makeField(param: Schema, ref: string,
         const fields = walkParamOrProp(definition, path, definitions, parentTypes,
           formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF,
           formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name,
-          parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name)));
+          parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
         control = 'FormArray';
         initializer = `[]`;
         let addMethod = '';
-        addMethod += indent(`public add${nameParents}${_.upperFirst(_.camelCase(name))}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+        addMethod += indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
         addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         addMethod += indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
         addMethod += indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
@@ -227,7 +227,7 @@ function makeField(param: Schema, ref: string,
         formArrayMethods.push(addMethod);
 
         let removeMethod = '';
-        removeMethod += indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name))}(${formArrayParams} i: number): void {\n`);
+        removeMethod += indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${formArrayParams} i: number): void {\n`);
         removeMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         removeMethod += indent(`control.removeAt(i);\n`, 2);
         removeMethod += indent(`}\n`);
@@ -236,10 +236,10 @@ function makeField(param: Schema, ref: string,
         if (formArrayParams === '') {
           let resetMethod = '';
           resetMethod += indent(`while ((<FormArray>${formControl}).length) {\n`);
-          resetMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name))}(0);\n`, 2);
+          resetMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(0);\n`, 2);
           resetMethod += indent(`}\n`);
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name))}(${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
@@ -249,7 +249,7 @@ function makeField(param: Schema, ref: string,
           let resetMethod = '';
           resetMethod += `(${parent}_object, ${parent}) => {\n`;
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name))}(${parents}${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${parents}${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
@@ -270,7 +270,7 @@ function makeField(param: Schema, ref: string,
     control = 'FormGroup';
     const fields = walkParamOrProp(definition, path, definitions, parentTypes,
       formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams,
-      subArrayReset, parent, parents, nameParents + _.upperFirst(name));
+      subArrayReset, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
     initializer = `{\n${fields}\n}`;
   }
 
