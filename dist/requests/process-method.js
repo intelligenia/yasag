@@ -65,7 +65,17 @@ function processMethod(method, unwrapSingleParamMethods) {
         interfaceDef += `${method.responseDef.enumDeclaration}\n`;
     }
     const responseDef = method.responseDef;
-    return { methodDef, interfaceDef, usesGlobalType, usesQueryParams, paramGroups, responseDef, simpleName, methodName, method };
+    return {
+        methodDef,
+        interfaceDef,
+        usesGlobalType,
+        usesQueryParams,
+        paramGroups,
+        responseDef,
+        simpleName,
+        methodName,
+        method
+    };
 }
 exports.processMethod = processMethod;
 function getSplitParamsMethod(method, processedParams) {
@@ -107,7 +117,13 @@ function getParamSeparation(paramGroups) {
         let baseDef;
         let def;
         if (groupName === 'query') {
-            const list = _.map(group, p => `${p.name}: params.${p.name},`);
+            let arrayExists = false;
+            const list = _.map(group, p => {
+                if (p.type === 'array') {
+                    arrayExists = true;
+                }
+                return `${p.name}: params.${p.name},`;
+            });
             baseDef = '{\n' + utils_1.indent(list) + '\n};';
             def = `const queryParamBase = ${baseDef}\n\n`;
             def += 'let queryParams = new HttpParams();\n';
@@ -115,13 +131,15 @@ function getParamSeparation(paramGroups) {
             def += '  if (value !== undefined && value !== null) {\n';
             def += '    if (typeof value === \'string\') {\n';
             def += '      queryParams = queryParams.set(key, value);\n';
-            def += '    } else if(Array.isArray(value)){\n';
-            def += '      let val = \'\';\n';
-            def += '      value.forEach(v => val += v + \',\');\n';
-            def += '      if (val.length >0) {\n';
-            def += '        val = val.slice(0, val.length-1);\n';
-            def += '      }\n';
-            def += '      queryParams = queryParams.set(key, val);\n';
+            if (arrayExists) {
+                def += '    } else if (Array.isArray(value)) {\n';
+                def += '      let val = \'\';\n';
+                def += '      value.forEach(v => val += v + \',\');\n';
+                def += '      if (val.length >0) {\n';
+                def += '        val = val.slice(0, val.length - 1);\n';
+                def += '      }\n';
+                def += '      queryParams = queryParams.set(key, val);\n';
+            }
             def += '    } else {\n';
             def += '      queryParams = queryParams.set(key, JSON.stringify(value));\n';
             def += '    }\n';

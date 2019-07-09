@@ -124,8 +124,7 @@ export class UserService {
       if (value !== undefined && value !== null) {
         if (typeof value === 'string') {
           queryParams = queryParams.set(key, value);
-        }
-        else {
+        } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }
       }

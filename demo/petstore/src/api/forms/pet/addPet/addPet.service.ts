@@ -127,10 +127,10 @@ export class PetAddPetFormService {
   reset(value?: any): void {
     this.form.reset();
     while ((<FormArray>this.form['controls']['body']['controls']['tags']).length) {
-      this.removeTags(0);
+      this.removeBodyTags(0);
     }
     if (value && value['body'] && value['body']['tags']) {
-      this.addTags(value['body']['tags'].length);
+      this.addBodyTags(value['body']['tags'].length);
     }
     this.serverErrorsSubject.next(null);
     this.loadingSubject.next(false);

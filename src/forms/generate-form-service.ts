@@ -209,11 +209,11 @@ function makeField(param: Schema, ref: string,
         const fields = walkParamOrProp(definition, path, definitions, parentTypes,
           formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF,
           formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name,
-          parents + name + ', ', nameParents + _.upperFirst(name));
+          parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name)));
         control = 'FormArray';
         initializer = `[]`;
-        let addMethod: string = '';
-        addMethod += indent(`public add${nameParents}${_.upperFirst(name)}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+        let addMethod = '';
+        addMethod += indent(`public add${nameParents}${_.upperFirst(_.camelCase(name))}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
         addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         addMethod += indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
         addMethod += indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
@@ -226,30 +226,30 @@ function makeField(param: Schema, ref: string,
         addMethod += indent(`}\n`);
         formArrayMethods.push(addMethod);
 
-        let removeMethod: string = '';
-        removeMethod += indent(`public remove${nameParents}${_.upperFirst(name)}(${formArrayParams} i: number): void {\n`);
+        let removeMethod = '';
+        removeMethod += indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name))}(${formArrayParams} i: number): void {\n`);
         removeMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         removeMethod += indent(`control.removeAt(i);\n`, 2);
         removeMethod += indent(`}\n`);
         formArrayMethods.push(removeMethod);
 
-        if (formArrayParams == '') {
-          let resetMethod: string = '';
+        if (formArrayParams === '') {
+          let resetMethod = '';
           resetMethod += indent(`while ((<FormArray>${formControl}).length) {\n`);
-          resetMethod += indent(`this.remove${_.upperFirst(name)}(0);\n`, 2);
+          resetMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name))}(0);\n`, 2);
           resetMethod += indent(`}\n`);
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${_.upperFirst(name)}(${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name))}(${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           resetMethod += indent(`}\n`);
           formArrayReset.push(resetMethod);
         } else {
-          let resetMethod: string = '';
+          let resetMethod = '';
           resetMethod += `(${parent}_object, ${parent}) => {\n`;
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${_.upperFirst(name)}(${parents}${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name))}(${parents}${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });

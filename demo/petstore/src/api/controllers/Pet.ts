@@ -134,8 +134,14 @@ export class PetService {
       if (value !== undefined && value !== null) {
         if (typeof value === 'string') {
           queryParams = queryParams.set(key, value);
-        }
-        else {
+        } else if (Array.isArray(value)) {
+          let val = '';
+          value.forEach(v => val += v + ',');
+          if (val.length >0) {
+            val = val.slice(0, val.length - 1);
+          }
+          queryParams = queryParams.set(key, val);
+        } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }
       }
@@ -159,8 +165,14 @@ export class PetService {
       if (value !== undefined && value !== null) {
         if (typeof value === 'string') {
           queryParams = queryParams.set(key, value);
-        }
-        else {
+        } else if (Array.isArray(value)) {
+          let val = '';
+          value.forEach(v => val += v + ',');
+          if (val.length >0) {
+            val = val.slice(0, val.length - 1);
+          }
+          queryParams = queryParams.set(key, val);
+        } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }
       }
