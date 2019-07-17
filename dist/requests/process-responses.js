@@ -43,7 +43,7 @@ function processResponses(httpResponse, name, config) {
         type = _.uniqWith(property, _.isEqual).join(' | ');
     }
     else {
-        type = 'void';
+        type = 'string';
     }
     return { type, enumDeclaration, usesGlobalType };
 }

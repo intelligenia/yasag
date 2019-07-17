@@ -49,7 +49,7 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
   if (property.length) {
     type = _.uniqWith(property, _.isEqual).join(' | ');
   } else {
-    type = 'void';
+    type = 'string';
   }
 
   return {type, enumDeclaration, usesGlobalType};

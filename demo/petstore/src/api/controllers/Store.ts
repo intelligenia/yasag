@@ -86,10 +86,10 @@ export class StoreService {
    * For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/deleteOrder
    */
-  deleteOrder(params: DeleteOrderParams): Observable<void> {
+  deleteOrder(params: DeleteOrderParams): Observable<string> {
     const pathParams = {
       orderId: params.orderId,
     };
-    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`);
+    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`);
   }
 }

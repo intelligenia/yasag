@@ -46,7 +46,7 @@ export class PetUpdatePetWithFormFormService {
     this.cacheSub = {};
   }
 
-  submit(value: any = false): Observable<void> {
+  submit(value: any = false): Observable<string> {
     const cache = false;
     const only_cache = false;
     if (value === false) {
@@ -55,23 +55,39 @@ export class PetUpdatePetWithFormFormService {
     if ( this.cacheSub[JSON.stringify(value)] ) {
         return this.cacheSub[JSON.stringify(value)].asObservable();
     }
-    this.cacheSub[JSON.stringify(value)] = new ReplaySubject<void>(1);
+    this.cacheSub[JSON.stringify(value)] = new ReplaySubject<string>(1);
     const subject = this.cacheSub[JSON.stringify(value)];
     let cache_hit = false;
+    if (cache && this.cache[JSON.stringify(value)]) {
+      subject.next({...this.cache[JSON.stringify(value)]});
+      cache_hit = true;
+      if (only_cache) {
+        subject.complete();
+        this.loadingSubject.next(false);
+        delete this.cacheSub[JSON.stringify(value)];
+        return subject.asObservable();
+      }
+    }
     this.loadingSubject.next(true);
     this.serverErrorsSubject.next(null);
     this.currentValue = value;
     this.try(subject, value, cache_hit, cache);
     return subject.asObservable();
   }
-  try(subject: ReplaySubject<void>, value: any, cache_hit: boolean, cache: boolean, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
+  try(subject: ReplaySubject<string>, value: any, cache_hit: boolean, cache: boolean, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
     const result = this.petService.updatePetWithForm(value);
     result.pipe(
-      map(() => {
-        subject.next();
+      map(val => {
+        if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {
+          if (cache) {
+            this.cache[JSON.stringify(value)] = val;
+          }
+          subject.next(val);
+        }
         subject.complete();
         delete this.cacheSub[JSON.stringify(value)];
         this.loadingSubject.next(false);
+        return val;
       }),
       catchError(error => {
         if (error.status >= 500 && maxRetries > 0) {

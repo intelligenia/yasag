@@ -68,7 +68,7 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUser
    */
-  createUser(params: CreateUserParams): Observable<void> {
+  createUser(params: CreateUserParams): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
@@ -76,14 +76,14 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined);
+    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined);
   }
 
   /**
    * Creates list of users with given input array
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithArrayInput
    */
-  createWithArray(params: CreateWithArrayParams): Observable<void> {
+  createWithArray(params: CreateWithArrayParams): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
@@ -91,14 +91,14 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined);
+    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined);
   }
 
   /**
    * Creates list of users with given input array
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithListInput
    */
-  createWithList(params: CreateWithListParams): Observable<void> {
+  createWithList(params: CreateWithListParams): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
@@ -106,7 +106,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined);
+    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -144,8 +144,8 @@ export class UserService {
    * Logs out current logged in user session
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/logoutUser
    */
-  logout(): Observable<void> {
-    return this.http.get<void>(this.apiConfigService.options.apiUrl + `/v2/user/logout`);
+  logout(): Observable<string> {
+    return this.http.get<string>(this.apiConfigService.options.apiUrl + `/v2/user/logout`);
   }
 
   /**
@@ -164,7 +164,7 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/updateUser
    */
-  updateUser(params: UpdateUserParams): Observable<void> {
+  updateUser(params: UpdateUserParams): Observable<string> {
     const pathParams = {
       username: params.username,
     };
@@ -175,7 +175,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<void>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined);
+    return this.http.put<string>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -183,10 +183,10 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/deleteUser
    */
-  deleteUser(params: DeleteUserParams): Observable<void> {
+  deleteUser(params: DeleteUserParams): Observable<string> {
     const pathParams = {
       username: params.username,
     };
-    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`);
+    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`);
   }
 }

@@ -93,7 +93,7 @@ export class PetService {
    * Add a new pet to the store
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/addPet
    */
-  addPet(params: AddPetParams): Observable<void> {
+  addPet(params: AddPetParams): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
@@ -101,14 +101,14 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
   }
 
   /**
    * Update an existing pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePet
    */
-  updatePet(params: UpdatePetParams): Observable<void> {
+  updatePet(params: UpdatePetParams): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
@@ -116,7 +116,7 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<void>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.put<string>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
   }
 
   /**
@@ -197,7 +197,7 @@ export class PetService {
    * Updates a pet in the store with form data
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePetWithForm
    */
-  updatePetWithForm(params: UpdatePetWithFormParams): Observable<void> {
+  updatePetWithForm(params: UpdatePetWithFormParams): Observable<string> {
     const pathParams = {
       petId: params.petId,
     };
@@ -205,18 +205,18 @@ export class PetService {
       name: params.name,
       status: params.status,
     };
-    return this.http.post<void>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams);
+    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams);
   }
 
   /**
    * Deletes a pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/deletePet
    */
-  deletePet(params: DeletePetParams): Observable<void> {
+  deletePet(params: DeletePetParams): Observable<string> {
     const pathParams = {
       petId: params.petId,
     };
-    return this.http.delete<void>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
+    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
   }
 
   /**

@@ -315,7 +315,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent(`const subject = this.cacheSub[JSON.stringify(value)];\n`, 2);
 
   res += indent(`let cache_hit = false;\n`, 2);
-  if ( method.responseDef.type != 'void' ) {
+  if ( method.responseDef.type !== 'void' ) {
     res += indent(`if (cache && this.cache[JSON.stringify(value)]) {\n`, 2);
     if ( method.responseDef.type.indexOf('[]') > 0 ) {
       res += indent(`  subject.next([...this.cache[JSON.stringify(value)]]);\n`, 2);

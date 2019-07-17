@@ -254,7 +254,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent(`this.cacheSub[JSON.stringify(value)] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
     res += utils_1.indent(`const subject = this.cacheSub[JSON.stringify(value)];\n`, 2);
     res += utils_1.indent(`let cache_hit = false;\n`, 2);
-    if (method.responseDef.type != 'void') {
+    if (method.responseDef.type !== 'void') {
         res += utils_1.indent(`if (cache && this.cache[JSON.stringify(value)]) {\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
             res += utils_1.indent(`  subject.next([...this.cache[JSON.stringify(value)]]);\n`, 2);
