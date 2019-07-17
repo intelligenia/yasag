@@ -288,17 +288,22 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     res += utils_1.indent(`const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value', paramGroups)});\n`, 2);
     res += utils_1.indent(`result.pipe(\n`, 2);
-    if (method.responseDef.type == 'void') {
+    if (method.responseDef.type === 'void') {
         res += utils_1.indent(`  map(() => {\n`, 2);
     }
     else {
         res += utils_1.indent(`  map(val => {\n`, 2);
     }
-    if (method.responseDef.type == 'void') {
+    if (method.responseDef.type === 'void') {
         res += utils_1.indent(`    subject.next();\n`, 2);
     }
     else {
-        res += utils_1.indent(`    if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {\n`, 2);
+        if (method.responseDef.type === 'string') {
+            res += utils_1.indent(`    if (!cache_hit || this.cache[JSON.stringify(value)] !== val) {\n`, 2);
+        }
+        else {
+            res += utils_1.indent(`    if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {\n`, 2);
+        }
         res += utils_1.indent(`      if (cache) {\n`, 2);
         res += utils_1.indent(`        this.cache[JSON.stringify(value)] = val;\n`, 2);
         res += utils_1.indent(`      }\n`, 2);

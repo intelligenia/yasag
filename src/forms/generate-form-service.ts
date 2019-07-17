@@ -351,15 +351,19 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     `const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value', paramGroups)});\n`, 2);
 
   res += indent(`result.pipe(\n`, 2);
-  if ( method.responseDef.type == 'void' ) {
+  if ( method.responseDef.type === 'void' ) {
     res += indent(`  map(() => {\n`, 2);
   } else {
     res += indent(`  map(val => {\n`, 2);
   }
-  if ( method.responseDef.type == 'void' ) {
+  if ( method.responseDef.type === 'void' ) {
     res += indent(`    subject.next();\n`, 2);
   } else {
-    res += indent(`    if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {\n`, 2);
+    if ( method.responseDef.type === 'string' ) {
+      res += indent(`    if (!cache_hit || this.cache[JSON.stringify(value)] !== val) {\n`, 2);
+    } else {
+      res += indent(`    if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {\n`, 2);
+    }
     res += indent(`      if (cache) {\n`, 2);
     res += indent(`        this.cache[JSON.stringify(value)] = val;\n`, 2);
     res += indent(`      }\n`, 2);

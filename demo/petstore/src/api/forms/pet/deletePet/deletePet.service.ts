@@ -76,7 +76,7 @@ export class PetDeletePetFormService {
     const result = this.petService.deletePet(value);
     result.pipe(
       map(val => {
-        if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {
+        if (!cache_hit || this.cache[JSON.stringify(value)] !== val) {
           if (cache) {
             this.cache[JSON.stringify(value)] = val;
           }
