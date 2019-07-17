@@ -101,7 +101,7 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -116,7 +116,7 @@ export class PetService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<string>(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined);
+    return this.http.put(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -205,7 +205,7 @@ export class PetService {
       name: params.name,
       status: params.status,
     };
-    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams);
+    return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams, {responseType: 'text'});
   }
 
   /**
@@ -216,7 +216,7 @@ export class PetService {
     const pathParams = {
       petId: params.petId,
     };
-    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
+    return this.http.delete(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, {responseType: 'text'});
   }
 
   /**

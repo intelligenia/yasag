@@ -50,10 +50,14 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
     }
   }
 
-  params = getRequestParams(paramTypes, method.methodName);
+  params = getRequestParams(paramTypes, method.methodName, method.responseDef.type);
 
   methodDef += '\n';
   methodDef += makeComment([method.summary, method.description, method.swaggerUrl].filter(Boolean));
+  let responseType = method.responseDef.type;
+  if (responseType === 'string') {
+    responseType = '';
+  }
   methodDef += `${method.simpleName}(${paramsSignature}): Observable<${method.responseDef.type}> {\n`;
 
   // apply the param definitions, e.g. bodyParams
@@ -61,7 +65,11 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
   if (paramSeparation.length) methodDef += '\n';
 
   /* tslint:disable-next-line:max-line-length */
-  const body = `return this.http.${method.methodName}<${method.responseDef.type}>(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
+  let template = `<${method.responseDef.type}>`;
+  if (method.responseDef.type === 'string') {
+    template = '';
+  }
+  const body = `return this.http.${method.methodName}${template}(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
   methodDef += indent(body);
   methodDef += `\n`;
   methodDef += `}`;
@@ -190,8 +198,9 @@ function getParamSeparation(paramGroups: Dictionary<Parameter[]>): string[] {
  * Returns a list of additional params for http client call invocation
  * @param paramTypes list of params types (should be from `path`, `body`, `query`, `formData`)
  * @param methodName name of http method to invoke
+ * @param responseType type of the expected response
  */
-function getRequestParams(paramTypes: string[], methodName: string) {
+function getRequestParams(paramTypes: string[], methodName: string, responseType: string) {
   let res = '';
 
   if (['post', 'put', 'patch'].includes(methodName)) {
@@ -204,9 +213,18 @@ function getRequestParams(paramTypes: string[], methodName: string) {
     }
   }
 
+  let optionParams = '';
   if (paramTypes.includes('query')) {
-    res += `, {params: queryParams}`;
+    optionParams += `params: queryParams`;
   }
-
+  if (responseType === 'string') {
+    if (optionParams.length > 0) {
+      optionParams += ', ';
+    }
+    optionParams += 'responseType: \'text\'';
+  }
+  if (optionParams.length > 0) {
+    res += `, {${optionParams}}`;
+  }
   return res;
 }

@@ -76,7 +76,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined);
+    return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -91,7 +91,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined);
+    return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -106,7 +106,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.post<string>(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined);
+    return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -137,7 +137,7 @@ export class UserService {
       }
     });
 
-    return this.http.get<string>(this.apiConfigService.options.apiUrl + `/v2/user/login`, {params: queryParams});
+    return this.http.get(this.apiConfigService.options.apiUrl + `/v2/user/login`, {params: queryParams, responseType: 'text'});
   }
 
   /**
@@ -145,7 +145,7 @@ export class UserService {
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/logoutUser
    */
   logout(): Observable<string> {
-    return this.http.get<string>(this.apiConfigService.options.apiUrl + `/v2/user/logout`);
+    return this.http.get(this.apiConfigService.options.apiUrl + `/v2/user/logout`, {responseType: 'text'});
   }
 
   /**
@@ -175,7 +175,7 @@ export class UserService {
         bodyParamsWithoutUndefined[key] = value;
       }
     });
-    return this.http.put<string>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined);
+    return this.http.put(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /**
@@ -187,6 +187,6 @@ export class UserService {
     const pathParams = {
       username: params.username,
     };
-    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`);
+    return this.http.delete(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, {responseType: 'text'});
   }
 }

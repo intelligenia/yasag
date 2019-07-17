@@ -45,16 +45,24 @@ function processMethod(method, unwrapSingleParamMethods) {
             splitParamsMethod = getSplitParamsMethod(method, processedParams);
         }
     }
-    params = getRequestParams(paramTypes, method.methodName);
+    params = getRequestParams(paramTypes, method.methodName, method.responseDef.type);
     methodDef += '\n';
     methodDef += utils_1.makeComment([method.summary, method.description, method.swaggerUrl].filter(Boolean));
+    let responseType = method.responseDef.type;
+    if (responseType === 'string') {
+        responseType = '';
+    }
     methodDef += `${method.simpleName}(${paramsSignature}): Observable<${method.responseDef.type}> {\n`;
     // apply the param definitions, e.g. bodyParams
     methodDef += utils_1.indent(paramSeparation);
     if (paramSeparation.length)
         methodDef += '\n';
     /* tslint:disable-next-line:max-line-length */
-    const body = `return this.http.${method.methodName}<${method.responseDef.type}>(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
+    let template = `<${method.responseDef.type}>`;
+    if (method.responseDef.type === 'string') {
+        template = '';
+    }
+    const body = `return this.http.${method.methodName}${template}(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
     methodDef += utils_1.indent(body);
     methodDef += `\n`;
     methodDef += `}`;
@@ -169,8 +177,9 @@ function getParamSeparation(paramGroups) {
  * Returns a list of additional params for http client call invocation
  * @param paramTypes list of params types (should be from `path`, `body`, `query`, `formData`)
  * @param methodName name of http method to invoke
+ * @param responseType type of the expected response
  */
-function getRequestParams(paramTypes, methodName) {
+function getRequestParams(paramTypes, methodName, responseType) {
     let res = '';
     if (['post', 'put', 'patch'].includes(methodName)) {
         if (paramTypes.includes('body')) {
@@ -183,8 +192,18 @@ function getRequestParams(paramTypes, methodName) {
             res += `, {}`;
         }
     }
+    let optionParams = '';
     if (paramTypes.includes('query')) {
-        res += `, {params: queryParams}`;
+        optionParams += `params: queryParams`;
+    }
+    if (responseType === 'string') {
+        if (optionParams.length > 0) {
+            optionParams += ', ';
+        }
+        optionParams += 'responseType: \'text\'';
+    }
+    if (optionParams.length > 0) {
+        res += `, {${optionParams}}`;
     }
     return res;
 }

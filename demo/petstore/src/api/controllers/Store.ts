@@ -90,6 +90,6 @@ export class StoreService {
     const pathParams = {
       orderId: params.orderId,
     };
-    return this.http.delete<string>(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`);
+    return this.http.delete(this.apiConfigService.options.apiUrl + `/v2/store/order/${pathParams.orderId}`, {responseType: 'text'});
   }
 }
