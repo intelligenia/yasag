@@ -24,7 +24,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     content += getFormSubmitFunction(name, formName, simpleName, params, methodName, method);
     content += `\n\n`;
     // Reset function
-    content += getFormResetFunction(formName, formArrayReset);
+    content += getFormResetFunction(formName, formArrayReset, methodName);
     content += '}\n';
     const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
     utils_1.writeFile(componentHTMLFileName, content, config.header);
@@ -64,7 +64,12 @@ function getVariables(method, formName) {
     content += utils_1.indent(`private serverErrorsSubject: ReplaySubject<any>;\n`);
     content += utils_1.indent(`loading$: Observable<boolean>;\n`);
     content += utils_1.indent(`private loadingSubject: ReplaySubject<boolean>;\n`);
-    content += utils_1.indent(`currentValue: any;\n`);
+    if (method.methodName == 'get') {
+        content += utils_1.indent(`currentValue: any;\n`);
+    }
+    if (method.methodName == 'patch') {
+        content += utils_1.indent(`patchInitialValue: any;\n`);
+    }
     content += utils_1.indent(`private cache: any;\n`);
     content += utils_1.indent(`private cacheSub: any;\n`);
     return content;
@@ -247,6 +252,17 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     res += utils_1.indent(`if (value === false) {\n`, 2);
     res += utils_1.indent(`  value = this.${formName}.value;\n`, 2);
+    if (methodName == 'patch') {
+        // If it a PATCH, it deletes the unchanged properties
+        res += utils_1.indent(`  value = {...value};\n`, 2);
+        res += utils_1.indent(`  const newBody = {};\n`, 2);
+        res += utils_1.indent(`  Object.keys(this.patchInitialValue.data).forEach(key => {\n`, 2);
+        res += utils_1.indent(`   if (JSON.stringify(value.${method.paramGroups['body'][0]['name']}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups['body'][0]['name']}[key])) {\n`, 2);
+        res += utils_1.indent(`     newBody[key] = value.${method.paramGroups['body'][0]['name']}[key];\n`, 2);
+        res += utils_1.indent(`   }\n`, 2);
+        res += utils_1.indent(`  });\n`, 2);
+        res += utils_1.indent(`  value.${method.paramGroups['body'][0]['name']} = newBody;\n`, 2);
+    }
     res += utils_1.indent(`}\n`, 2);
     res += utils_1.indent(`if ( this.cacheSub[JSON.stringify(value)] ) {\n`, 2);
     res += utils_1.indent(`    return this.cacheSub[JSON.stringify(value)].asObservable();\n`, 2);
@@ -273,13 +289,16 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     res += utils_1.indent(`this.loadingSubject.next(true);\n`, 2);
     res += utils_1.indent(`this.serverErrorsSubject.next(null);\n`, 2);
-    res += utils_1.indent(`this.currentValue = value;\n`, 2);
+    if (methodName == 'get') {
+        res += utils_1.indent(`this.currentValue = value;\n`, 2);
+    }
     res += utils_1.indent(`this.try(subject, value, cache_hit, cache);\n`, 2);
     res += utils_1.indent(`return subject.asObservable();\n`, 2);
     res += utils_1.indent('}\n');
     res += utils_1.indent('\n');
     res += utils_1.indent(`try(subject: ReplaySubject<${method.responseDef.type}>, value: any, cache_hit: boolean, cache: boolean, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
     if (methodName == 'get') {
+        // If it is GET, then it checks if the currentValue has changed. It is necessary when replay the "try" due to a 500 error
         res += utils_1.indent(`if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {\n`, 2);
         res += utils_1.indent(`  subject.complete();\n`, 2);
         res += utils_1.indent(`  delete this.cacheSub[JSON.stringify(value)];\n`, 2);
@@ -350,7 +369,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent('\n');
     return res;
 }
-function getFormResetFunction(formName, formArrayReset) {
+function getFormResetFunction(formName, formArrayReset, methodName) {
     let res = utils_1.indent('reset(value?: any): void {\n');
     res += utils_1.indent(`this.${formName}.reset();\n`, 2);
     for (let i in formArrayReset) {
@@ -362,6 +381,9 @@ function getFormResetFunction(formName, formArrayReset) {
     res += utils_1.indent(`if (value) {\n`, 2);
     res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 3);
     res += utils_1.indent('}\n', 2);
+    if (methodName == 'patch') {
+        res += utils_1.indent(`this.patchInitialValue = this.${formName}.value;\n`, 2);
+    }
     res += utils_1.indent('}\n');
     return res;
 }

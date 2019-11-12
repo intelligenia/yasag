@@ -6,9 +6,9 @@ import {nativeTypes} from '../conf';
 import {ProcessedDefinition} from '../definitions';
 import {Config} from '../generate';
 import {parameterToSchema} from '../requests/process-params';
+import { MethodOutput} from '../requests/requests.models';
 import {NativeNames, Parameter, Schema} from '../types';
 import {indent, writeFile} from '../utils';
-import { MethodOutput} from '../requests/requests.models';
 
 export interface FieldDefinition {
   content: string;
@@ -48,7 +48,7 @@ export function generateFormService(
   content += `\n\n`;
 
   // Reset function
-  content += getFormResetFunction(formName, formArrayReset);
+  content += getFormResetFunction(formName, formArrayReset, methodName);
 
   content += '}\n';
 
@@ -91,7 +91,12 @@ function getVariables(method: MethodOutput, formName: string): string {
   content += indent(`private serverErrorsSubject: ReplaySubject<any>;\n`);
   content += indent(`loading$: Observable<boolean>;\n`);
   content += indent(`private loadingSubject: ReplaySubject<boolean>;\n`);
-  content += indent(`currentValue: any;\n`);
+  if (method.methodName == 'get') {
+    content += indent(`currentValue: any;\n`);
+  }
+  if (method.methodName == 'patch') {
+    content += indent(`patchInitialValue: any;\n`);
+  }
   content += indent(`private cache: any;\n`);
   content += indent(`private cacheSub: any;\n`);
   return content;
@@ -307,6 +312,17 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   res += indent(`if (value === false) {\n`, 2);
   res += indent(`  value = this.${formName}.value;\n`, 2);
+  if (methodName == 'patch') {
+    // If it a PATCH, it deletes the unchanged properties
+    res += indent(`  value = {...value};\n`, 2);
+    res += indent(`  const newBody = {};\n`, 2);
+    res += indent(`  Object.keys(this.patchInitialValue.data).forEach(key => {\n`, 2);
+    res += indent(`   if (JSON.stringify(value.${method.paramGroups['body'][0]['name']}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups['body'][0]['name']}[key])) {\n`, 2);
+    res += indent(`     newBody[key] = value.${method.paramGroups['body'][0]['name']}[key];\n`, 2);
+    res += indent(`   }\n`, 2);
+    res += indent(`  });\n`, 2);
+    res += indent(`  value.${method.paramGroups['body'][0]['name']} = newBody;\n`, 2);
+  }
   res += indent(`}\n`, 2);
   res += indent(`if ( this.cacheSub[JSON.stringify(value)] ) {\n`, 2);
   res += indent(`    return this.cacheSub[JSON.stringify(value)].asObservable();\n`, 2);
@@ -333,7 +349,9 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   res += indent(`this.loadingSubject.next(true);\n`, 2);
   res += indent(`this.serverErrorsSubject.next(null);\n`, 2);
-  res += indent(`this.currentValue = value;\n`, 2);
+  if (methodName == 'get') {
+    res += indent(`this.currentValue = value;\n`, 2);
+  }
   res += indent(`this.try(subject, value, cache_hit, cache);\n`, 2);
   res += indent(`return subject.asObservable();\n`, 2);
   res += indent('}\n');
@@ -341,6 +359,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
 
   res += indent(`try(subject: ReplaySubject<${ method.responseDef.type }>, value: any, cache_hit: boolean, cache: boolean, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
   if (methodName == 'get') {
+    // If it is GET, then it checks if the currentValue has changed. It is necessary when replay the "try" due to a 500 error
     res += indent(`if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {\n`, 2);
     res += indent(`  subject.complete();\n`, 2);
     res += indent(`  delete this.cacheSub[JSON.stringify(value)];\n`, 2);
@@ -413,7 +432,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   return res;
 }
 
-function getFormResetFunction(formName: string, formArrayReset: string[]) {
+function getFormResetFunction(formName: string, formArrayReset: string[], methodName: string) {
   let res = indent('reset(value?: any): void {\n');
   res += indent(`this.${formName}.reset();\n`, 2);
   for (let i in formArrayReset) {
@@ -426,6 +445,9 @@ function getFormResetFunction(formName: string, formArrayReset: string[]) {
   res += indent(`if (value) {\n`, 2);
   res += indent(`this.${formName}.patchValue(value);\n`, 3);
   res += indent('}\n', 2);
+  if (methodName == 'patch') {
+    res += indent(`this.patchInitialValue = this.${formName}.value;\n`, 2);
+  }
   res += indent('}\n');
 
   return res;

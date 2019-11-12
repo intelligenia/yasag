@@ -26,7 +26,6 @@ export class UserDeleteUserFormService {
   private serverErrorsSubject: ReplaySubject<any>;
   loading$: Observable<boolean>;
   private loadingSubject: ReplaySubject<boolean>;
-  currentValue: any;
   private cache: any;
   private cacheSub: any;
   constructor(
@@ -68,7 +67,6 @@ export class UserDeleteUserFormService {
     }
     this.loadingSubject.next(true);
     this.serverErrorsSubject.next(null);
-    this.currentValue = value;
     this.try(subject, value, cache_hit, cache);
     return subject.asObservable();
   }
