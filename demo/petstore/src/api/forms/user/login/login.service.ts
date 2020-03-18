@@ -124,7 +124,6 @@ export class UserLoginFormService {
     }
   }
   patch(value: any): void {
-    const currentValue = this.form.value;
-    Object.assign(currentValue, value);
+    this.form.patchValue(value);
   }
 }

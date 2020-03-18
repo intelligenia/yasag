@@ -154,10 +154,11 @@ export class PetUpdatePetFormService {
     }
   }
   patch(value: any): void {
-    const currentValue = this.form.value;
-    Object.assign(currentValue, value);
-    if (value && value['body'] && value['body']['tags'] && value['body']['tags'].length > this.form.value['body']['tags'].length) {
-      this.addBodyTags(value['body']['tags'].length - this.form.value['body']['tags'].length);
+    if (value && value['body'] && value['body']['tags']) {
+      if (value['body']['tags'].length > this.form.value['body']['tags'].length) {
+        this.addBodyTags(value['body']['tags'].length - this.form.value['body']['tags'].length);
+      }
     }
+    this.form.patchValue(value);
   }
 }

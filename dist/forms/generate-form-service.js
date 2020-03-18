@@ -197,8 +197,10 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     resetMethod += utils_1.indent(`}\n`);
                     formArrayReset.push(resetMethod);
                     let patchMethod = '';
-                    patchMethod += utils_1.indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
-                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 2);
+                    patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
+                    patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+                    patchMethod += utils_1.indent(`}\n`, 2);
                     mySubArrayPatch.forEach(subarray => {
                         patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
                     });
@@ -218,8 +220,10 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     subArrayReset.push(resetMethod);
                     let patchMethod = '';
                     patchMethod += `(${parent}_object, ${parent}) => {\n`;
-                    patchMethod += utils_1.indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
-                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 2);
+                    patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
+                    patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+                    patchMethod += utils_1.indent(`}\n`, 2);
                     mySubArrayPatch.forEach(subarray => {
                         patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
                     });

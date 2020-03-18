@@ -259,8 +259,10 @@ function makeField(param: Schema, ref: string,
           formArrayReset.push(resetMethod);
 
           let patchMethod = '';
-          patchMethod += indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
-          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 2);
+          patchMethod += indent(`if (${formValueIF}) {\n`);
+          patchMethod += indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+          patchMethod += indent(`}\n`, 2);
           mySubArrayPatch.forEach( subarray => {
             patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
@@ -280,8 +282,10 @@ function makeField(param: Schema, ref: string,
 
           let patchMethod = '';
           patchMethod += `(${parent}_object, ${parent}) => {\n`;
-          patchMethod += indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
-          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 2);
+          patchMethod += indent(`if (${formValueIF}) {\n`);
+          patchMethod += indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+          patchMethod += indent(`}\n`, 2);
           mySubArrayPatch.forEach( subarray => {
             patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });

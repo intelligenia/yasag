@@ -150,10 +150,11 @@ export class UserCreateWithArrayFormService {
     }
   }
   patch(value: any): void {
-    const currentValue = this.form.value;
-    Object.assign(currentValue, value);
-    if (value && value['body'] && value['body'].length > this.form.value['body'].length) {
-      this.addBody(value['body'].length - this.form.value['body'].length);
+    if (value && value['body']) {
+      if (value['body'].length > this.form.value['body'].length) {
+        this.addBody(value['body'].length - this.form.value['body'].length);
+      }
     }
+    this.form.patchValue(value);
   }
 }
