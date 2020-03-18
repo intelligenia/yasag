@@ -6,11 +6,12 @@ const common_1 = require("../common");
 const conf_1 = require("../conf");
 const process_params_1 = require("../requests/process-params");
 const utils_1 = require("../utils");
-function generateFormService(config, name, params, definitions, simpleName, formSubDirName, className, methodName, method) {
+function generateFormService(config, name, params, definitions, simpleName, formSubDirName, className, methodName, method, readOnly) {
     let content = '';
     const formName = 'form';
     const formArrayReset = [];
-    const constructor = getConstructor(name, formName, definitions, params, formArrayReset);
+    const formArrayPatch = [];
+    const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly);
     // Imports
     content += getImports(name, constructor);
     // Class declaration
@@ -24,7 +25,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     content += getFormSubmitFunction(name, formName, simpleName, params, methodName, method);
     content += `\n\n`;
     // Reset function
-    content += getFormResetFunction(formName, formArrayReset, methodName);
+    content += getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName);
     content += '}\n';
     const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
     utils_1.writeFile(componentHTMLFileName, content, config.header);
@@ -74,14 +75,14 @@ function getVariables(method, formName) {
     content += utils_1.indent(`private cacheSub: any;\n`);
     return content;
 }
-function getConstructor(name, formName, definitions, params, formArrayReset) {
+function getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly) {
     let res = utils_1.indent('constructor(\n');
     res += utils_1.indent(`private ${_.lowerFirst(name)}Service: ${name}Service,\n`, 2);
     res += utils_1.indent(') {\n');
     const definitionsMap = _.groupBy(definitions, 'name');
     const parentTypes = [];
     const formArrayMethods = [];
-    const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes, `this.${formName}`, formArrayMethods, 'value', 'value', formArrayReset);
+    const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes, `this.${formName}`, formArrayMethods, 'value', 'value', formArrayReset, formArrayPatch, readOnly);
     res += utils_1.indent(`this.${formName} = new FormGroup({\n${formDefinition}\n});\n`, 2);
     res += utils_1.indent(`this.defaultValue = this.${formName}.value;\n`, 2);
     res += utils_1.indent(`this.serverErrorsSubject = new ReplaySubject<any>(1);\n`, 2);
@@ -92,13 +93,13 @@ function getConstructor(name, formName, definitions, params, formArrayReset) {
     res += utils_1.indent(`this.cacheSub = {};\n`, 2);
     res += utils_1.indent('}\n');
     res += '\n';
-    for (let method in formArrayMethods) {
+    for (const method in formArrayMethods) {
         res += formArrayMethods[method];
         res += '\n';
     }
     return res;
 }
-function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams = '', subArrayReset = [], parent = '', parents = '', nameParents = '') {
+function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, formArrayParams = '', subArrayReset = [], subArrayPatch = [], parent = '', parents = '', nameParents = '') {
     const res = [];
     let schema;
     let required;
@@ -130,14 +131,17 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
         let newParentTypes = [];
         if (ref)
             newParentTypes = [...parentTypes, ref];
-        if (!param.readOnly || name == 'id') {
-            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes, `${control}['controls']['${name}']`, formArrayMethods, formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents);
+        if (readOnly && name.endsWith(readOnly)) {
+            param.readOnly = true;
+        }
+        if (!param.readOnly || name === 'id') {
+            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes, `${control}['controls']['${name}']`, formArrayMethods, formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset, formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents, readOnly);
             res.push(fieldDefinition);
         }
     });
     return utils_1.indent(res);
 }
-function makeField(param, ref, name, path, required, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents = '') {
+function makeField(param, ref, name, path, required, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents = '', readOnly) {
     let definition;
     let type = param.type;
     let control;
@@ -157,7 +161,8 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                 const refType = param.items.$ref.replace(/^#\/definitions\//, '');
                 definition = definitions[common_1.normalizeDef(refType)][0];
                 const mySubArrayReset = [];
-                const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name, parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
+                const mySubArrayPatch = [];
+                const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayPatch, readOnly, formArrayParams + name + ': number' + ', ', mySubArrayReset, mySubArrayPatch, name, parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
                 control = 'FormArray';
                 initializer = `[]`;
                 let addMethod = '';
@@ -165,7 +170,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                 addMethod += utils_1.indent(`const control = <FormArray>${formControl};\n`, 2);
                 addMethod += utils_1.indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
                 addMethod += utils_1.indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
-                addMethod += utils_1.indent(`if (position){\n`, 3);
+                addMethod += utils_1.indent(`if (position !== undefined){\n`, 3);
                 addMethod += utils_1.indent(`control.insert(position, fg);\n`, 4);
                 addMethod += utils_1.indent(`} else {\n`, 3);
                 addMethod += utils_1.indent(`control.push(fg);\n`, 4);
@@ -191,6 +196,14 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     });
                     resetMethod += utils_1.indent(`}\n`);
                     formArrayReset.push(resetMethod);
+                    let patchMethod = '';
+                    patchMethod += utils_1.indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
+                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 2);
+                    mySubArrayPatch.forEach(subarray => {
+                        patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                    });
+                    patchMethod += utils_1.indent(`}\n`);
+                    formArrayPatch.push(patchMethod);
                 }
                 else {
                     let resetMethod = '';
@@ -203,6 +216,16 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     resetMethod += utils_1.indent(`}\n`);
                     resetMethod += `}`;
                     subArrayReset.push(resetMethod);
+                    let patchMethod = '';
+                    patchMethod += `(${parent}_object, ${parent}) => {\n`;
+                    patchMethod += utils_1.indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
+                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 2);
+                    mySubArrayReset.forEach(subarray => {
+                        patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                    });
+                    patchMethod += utils_1.indent(`}\n`);
+                    patchMethod += `}`;
+                    subArrayPatch.push(patchMethod);
                 }
             }
         }
@@ -216,7 +239,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
         const refType = ref.replace(/^#\/definitions\//, '');
         definition = definitions[common_1.normalizeDef(refType)][0];
         control = 'FormGroup';
-        const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams, subArrayReset, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
+        const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
         initializer = `{\n${fields}\n}`;
     }
     const validators = getValidators(param);
@@ -241,7 +264,7 @@ function getValidators(param) {
     return validators;
 }
 function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodName, method) {
-    let res = "";
+    let res = '';
     if (methodName == 'get') {
         res += utils_1.indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${method.responseDef.type}> {\n`);
     }
@@ -257,11 +280,11 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`  value = {...value};\n`, 2);
         res += utils_1.indent(`  const newBody = {};\n`, 2);
         res += utils_1.indent(`  Object.keys(this.patchInitialValue.data).forEach(key => {\n`, 2);
-        res += utils_1.indent(`   if (JSON.stringify(value.${method.paramGroups['body'][0]['name']}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups['body'][0]['name']}[key])) {\n`, 2);
-        res += utils_1.indent(`     newBody[key] = value.${method.paramGroups['body'][0]['name']}[key];\n`, 2);
+        res += utils_1.indent(`   if (JSON.stringify(value.${method.paramGroups.body[0].name}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups.body[0].name}[key])) {\n`, 2);
+        res += utils_1.indent(`     newBody[key] = value.${method.paramGroups.body[0].name}[key];\n`, 2);
         res += utils_1.indent(`   }\n`, 2);
         res += utils_1.indent(`  });\n`, 2);
-        res += utils_1.indent(`  value.${method.paramGroups['body'][0]['name']} = newBody;\n`, 2);
+        res += utils_1.indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
     }
     res += utils_1.indent(`}\n`, 2);
     res += utils_1.indent(`if ( this.cacheSub[JSON.stringify(value)] ) {\n`, 2);
@@ -369,10 +392,10 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent('\n');
     return res;
 }
-function getFormResetFunction(formName, formArrayReset, methodName) {
+function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName) {
     let res = utils_1.indent('reset(value?: any): void {\n');
     res += utils_1.indent(`this.${formName}.reset();\n`, 2);
-    for (let i in formArrayReset) {
+    for (const i in formArrayReset) {
         res += utils_1.indent(formArrayReset[i]);
     }
     res += utils_1.indent(`this.serverErrorsSubject.next(null);\n`, 2);
@@ -381,9 +404,15 @@ function getFormResetFunction(formName, formArrayReset, methodName) {
     res += utils_1.indent(`if (value) {\n`, 2);
     res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 3);
     res += utils_1.indent('}\n', 2);
-    if (methodName == 'patch') {
+    if (methodName === 'patch') {
         res += utils_1.indent(`this.patchInitialValue = this.${formName}.value;\n`, 2);
     }
+    res += utils_1.indent('}\n\n');
+    res += utils_1.indent('patch(value: any): void {\n');
+    for (const i in formArrayPatch) {
+        res += utils_1.indent(formArrayPatch[i]);
+    }
+    res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 2);
     res += utils_1.indent('}\n');
     return res;
 }

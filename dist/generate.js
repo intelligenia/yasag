@@ -18,8 +18,9 @@ const utils_1 = require("./utils");
  * @param omitBasepath shouldn't generate API basepath info to generated files
  * @param environmentAPI
  * @param omitHeader
+ * @param readOnly
  */
-function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false) {
+function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false, readOnly = '') {
     let schema;
     try {
         const content = fs.readFileSync(src);
@@ -50,7 +51,7 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
     if (!fs.existsSync(dest))
         fs.mkdirSync(dest);
     const definitions = definitions_1.processDefinitions(schema.definitions, config);
-    process_paths_1.processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`, config, definitions, schema.basePath, environmentAPI);
+    process_paths_1.processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`, config, definitions, schema.basePath, environmentAPI, readOnly);
 }
 exports.generate = generate;
 function recreateDirectories(dest, generateStore) {

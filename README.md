@@ -45,6 +45,8 @@ Generate minimalistic TypeScript API layer for Angular with full type reflection
 
 `-h, --omit-header` - Omit print header on each file
 
+`-r, --read-only <ending>` - Omit attributes ending by `<ending>` in PUT, POST and PATCH methods, default: None
+
 
 ## Use
 
@@ -207,6 +209,9 @@ export class ExampleComponent{
      where the user is writing the search word, and at the same time we are getting results from the backend
   - `reset` (method) to initialize the FormService. This method gets an optional parameter with a value,
     if a value is passed, the FormGroup is set to match the corresponding value 
+    (including nested objects, and nested arrays of objects)
+  - `patch` (method) to update the FormService. This method gets a parameter with a value,
+    the FormGroup is set to match the corresponding value 
     (including nested objects, and nested arrays of objects)
   - `loading$` Observable to know if the endpoint is running right now or not 
     (very useful to inform the user)

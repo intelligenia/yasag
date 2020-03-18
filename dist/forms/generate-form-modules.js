@@ -20,8 +20,9 @@ exports.getClassName = getClassName;
  * @param name: tag name
  * @param processedMethods: endpoints of this tag
  * @param definitions
+ * @param readOnly
  */
-function createForms(config, name, processedMethods, definitions) {
+function createForms(config, name, processedMethods, definitions, readOnly) {
     // Creating the tag folder
     const kebabName = _.kebabCase(name);
     const formBaseDir = path.join(config.dest, conf.storeDir);
@@ -39,7 +40,7 @@ function createForms(config, name, processedMethods, definitions) {
         });
         const className = name + getClassName(simpleName);
         // service.ts
-        generate_form_service_1.generateFormService(config, name, formParams, definitions, simpleName, formSubDirName, className, processedMethod.methodName, processedMethod);
+        generate_form_service_1.generateFormService(config, name, formParams, definitions, simpleName, formSubDirName, className, processedMethod.methodName, processedMethod, readOnly);
         // module.ts
         process_module_1.createModule(config, name, formSubDirName, simpleName, className);
     }

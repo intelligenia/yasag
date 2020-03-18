@@ -122,4 +122,8 @@ export class StoreGetOrderByIdFormService {
       this.form.patchValue(value);
     }
   }
+  patch(value: any): void {
+    const currentValue = this.form.value;
+    Object.assign(currentValue, value);
+  }
 }

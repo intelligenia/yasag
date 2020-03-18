@@ -16,6 +16,7 @@ commander
   .option('-b, --omit-basepath', `Omit basepath, default: ${conf.omitBasepath}`)
   .option('-v, --environment-var <environmentAPI>', `Name of the environment variable for the base path, default: ${conf.environmentAPI}`)
   .option('-h, --omit-header', `Omit print header on each file, default: ${conf.omitHeader}`)
+  .option('-r, --read-only <ending>', `Omit attributes ending by <ending> in PUT, POST and PATCH methods, default: None`)
   .parse(process.argv);
 
 generate(commander.src,
@@ -26,4 +27,5 @@ generate(commander.src,
   commander.omitVersion,
   commander.omitBasepath,
   commander.environmentVar,
-  commander.omitHeader);
+  commander.omitHeader,
+  commander.readOnly);

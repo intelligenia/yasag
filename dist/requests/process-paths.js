@@ -5,12 +5,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * in the schema
  */
 const _ = require("lodash");
-const conf = require("../conf");
-const process_controller_1 = require("./process-controller");
-const forms_module_1 = require("../forms/forms-module");
 const path = require("path");
+const conf = require("../conf");
+const forms_module_1 = require("../forms/forms-module");
 const utils_1 = require("../utils");
 const config_service_1 = require("./config-service");
+const process_controller_1 = require("./process-controller");
 /**
  * Entry point, processes all possible api requests and exports them
  * to files devided ty controllers (same as swagger web app sections)
@@ -20,8 +20,9 @@ const config_service_1 = require("./config-service");
  * @param definitions
  * @param basePath base URL path
  * @param environmentAPI
+ * @param readOnly
  */
-function processPaths(pathsWithParameters, swaggerPath, config, definitions, basePath, environmentAPI) {
+function processPaths(pathsWithParameters, swaggerPath, config, definitions, basePath, environmentAPI, readOnly) {
     const paths = preProcessPaths(pathsWithParameters);
     const controllers = _.flatMap(paths, (methods, url) => (_.map(methods, (method, methodName) => ({
         url,
@@ -40,7 +41,7 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     }))));
     const controllerFiles = _.groupBy(controllers, 'name');
     conf.controllerIgnores.forEach(key => delete controllerFiles[key]);
-    _.forEach(controllerFiles, (methods, name) => process_controller_1.processController(methods, name.replace('[', '').replace(']', ''), config, definitions));
+    _.forEach(controllerFiles, (methods, name) => process_controller_1.processController(methods, name.replace('[', '').replace(']', ''), config, definitions, readOnly));
     const modules = [];
     _.forEach(_.groupBy(controllers, 'name'), (_methods, name) => { modules.push(name); });
     // Create global module for forms

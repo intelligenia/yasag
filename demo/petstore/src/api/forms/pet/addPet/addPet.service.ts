@@ -60,7 +60,7 @@ export class PetAddPetFormService {
         id: new FormControl({value: undefined, disabled: false}, []),
         name: new FormControl({value: undefined, disabled: false}, []),
       }, []);
-      if (position){
+      if (position !== undefined){
         control.insert(position, fg);
       } else {
         control.push(fg);
@@ -151,6 +151,13 @@ export class PetAddPetFormService {
     this.form.patchValue(this.defaultValue);
     if (value) {
       this.form.patchValue(value);
+    }
+  }
+  patch(value: any): void {
+    const currentValue = this.form.value;
+    Object.assign(currentValue, value);
+    if (value && value['body'] && value['body']['tags'] && value['body']['tags'].length > this.form.value['body']['tags'].length) {
+      this.addBodyTags(value['body']['tags'].length - this.form.value['body']['tags'].length);
     }
   }
 }

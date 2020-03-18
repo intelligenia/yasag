@@ -70,7 +70,7 @@ export class UserService {
    */
   createUser(params: CreateUserParams): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;
@@ -85,7 +85,7 @@ export class UserService {
    */
   createWithArray(params: CreateWithArrayParams): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;
@@ -100,7 +100,7 @@ export class UserService {
    */
   createWithList(params: CreateWithListParams): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;
@@ -169,7 +169,7 @@ export class UserService {
       username: params.username,
     };
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;

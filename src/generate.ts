@@ -25,6 +25,7 @@ export interface Config {
  * @param omitBasepath shouldn't generate API basepath info to generated files
  * @param environmentAPI
  * @param omitHeader
+ * @param readOnly
  */
 export function generate(
   src: string = conf.apiFile,
@@ -35,8 +36,8 @@ export function generate(
   omitVersion = false,
   omitBasepath = false,
   environmentAPI: string = conf.environmentAPI,
-  omitHeader = false
-  ) {
+  omitHeader = false,
+  readOnly= '') {
   let schema: any;
 
   try {
@@ -69,7 +70,7 @@ export function generate(
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);
   const definitions = processDefinitions(schema.definitions, config);
   processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`,
-               config, definitions, schema.basePath, environmentAPI);
+               config, definitions, schema.basePath, environmentAPI, readOnly);
 }
 
 function recreateDirectories(dest: string, generateStore: boolean) {

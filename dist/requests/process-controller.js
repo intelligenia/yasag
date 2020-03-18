@@ -17,8 +17,9 @@ const process_responses_1 = require("./process-responses");
  * @param name
  * @param config
  * @param definitions
+ * @param readOnly
  */
-function processController(methods, name, config, definitions) {
+function processController(methods, name, config, definitions, readOnly) {
     const filename = path.join(config.dest, conf.apiDir, `${name}.ts`);
     let usesGlobalType = false;
     // make simpleNames unique and process responses
@@ -65,7 +66,7 @@ function processController(methods, name, config, definitions) {
     utils_1.writeFile(filename, content, config.header);
     /* forms */
     if (config.generateStore) {
-        generate_form_modules_1.createForms(config, name, processedMethods, definitions);
+        generate_form_modules_1.createForms(config, name, processedMethods, definitions, readOnly);
     }
 }
 exports.processController = processController;

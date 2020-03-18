@@ -60,7 +60,7 @@ export class StoreService {
    */
   placeOrder(params: PlaceOrderParams): Observable<__model.Order> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;

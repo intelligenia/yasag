@@ -56,7 +56,7 @@ export class UserCreateWithArrayFormService {
         phone: new FormControl({value: undefined, disabled: false}, []),
         userStatus: new FormControl({value: undefined, disabled: false}, []),
       }, []);
-      if (position){
+      if (position !== undefined){
         control.insert(position, fg);
       } else {
         control.push(fg);
@@ -147,6 +147,13 @@ export class UserCreateWithArrayFormService {
     this.form.patchValue(this.defaultValue);
     if (value) {
       this.form.patchValue(value);
+    }
+  }
+  patch(value: any): void {
+    const currentValue = this.form.value;
+    Object.assign(currentValue, value);
+    if (value && value['body'] && value['body'].length > this.form.value['body'].length) {
+      this.addBody(value['body'].length - this.form.value['body'].length);
     }
   }
 }

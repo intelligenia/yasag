@@ -24,12 +24,14 @@ export function getClassName(name: string) {
  * @param name: tag name
  * @param processedMethods: endpoints of this tag
  * @param definitions
+ * @param readOnly
  */
 export function createForms(
   config: Config,
   name: string,
   processedMethods: MethodOutput[],
   definitions: ProcessedDefinition[],
+  readOnly: string,
 ) {
   // Creating the tag folder
   const kebabName = _.kebabCase(name);
@@ -61,7 +63,8 @@ export function createForms(
       formSubDirName,
       className,
       processedMethod.methodName,
-      processedMethod
+      processedMethod,
+      readOnly,
     );
     // module.ts
     createModule(config, name, formSubDirName, simpleName, className);

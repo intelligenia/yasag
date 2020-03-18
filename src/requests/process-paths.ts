@@ -3,16 +3,16 @@
  * in the schema
  */
 import * as _ from 'lodash';
+import * as path from 'path';
 import * as conf from '../conf';
 import {ProcessedDefinition} from '../definitions';
+import {createFormsModule} from '../forms/forms-module';
 import {Config} from '../generate';
 import {Method, MethodName} from '../types';
+import {writeFile} from '../utils';
+import {createConfigService} from './config-service';
 import {processController} from './process-controller';
 import {ControllerMethod, Paths, PathsWithParameters} from './requests.models';
-import {createFormsModule} from '../forms/forms-module';
-import * as path from "path";
-import {writeFile} from "../utils";
-import {createConfigService} from './config-service';
 
 /**
  * Entry point, processes all possible api requests and exports them
@@ -23,9 +23,11 @@ import {createConfigService} from './config-service';
  * @param definitions
  * @param basePath base URL path
  * @param environmentAPI
+ * @param readOnly
  */
 export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPath: string, config: Config,
-                             definitions: ProcessedDefinition[], basePath: string, environmentAPI: string) {
+                             definitions: ProcessedDefinition[], basePath: string, environmentAPI: string,
+                             readOnly: string) {
 
   const paths = preProcessPaths(pathsWithParameters);
   const controllers: ControllerMethod[] = _.flatMap(paths, (methods, url: string) => (
@@ -46,10 +48,10 @@ export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPa
     }))
   ));
 
-
   const controllerFiles = _.groupBy(controllers, 'name');
   conf.controllerIgnores.forEach(key => delete controllerFiles[key]);
-  _.forEach(controllerFiles, (methods, name) => processController(methods, name.replace('[','').replace(']',''), config, definitions));
+  _.forEach(controllerFiles, (methods, name) =>
+    processController(methods, name.replace('[', '').replace(']', ''), config, definitions, readOnly));
 
   const modules: string[] = [];
   _.forEach(_.groupBy(controllers, 'name'), (_methods, name) => { modules.push(name); });
@@ -58,7 +60,7 @@ export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPa
 
   let content = '';
   controllers.forEach(method =>
-      content += `export * from './forms/${_.kebabCase(method.name)}/${method.simpleName}/${method.simpleName}.service';\n`
+      content += `export * from './forms/${_.kebabCase(method.name)}/${method.simpleName}/${method.simpleName}.service';\n`,
   );
   const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
   writeFile(allFormServiceFileName, content, config.header);

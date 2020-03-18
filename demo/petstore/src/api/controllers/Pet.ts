@@ -95,7 +95,7 @@ export class PetService {
    */
   addPet(params: AddPetParams): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;
@@ -110,7 +110,7 @@ export class PetService {
    */
   updatePet(params: UpdatePetParams): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = {};
+    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
         bodyParamsWithoutUndefined[key] = value;

@@ -6,7 +6,7 @@ import {nativeTypes} from '../conf';
 import {ProcessedDefinition} from '../definitions';
 import {Config} from '../generate';
 import {parameterToSchema} from '../requests/process-params';
-import { MethodOutput} from '../requests/requests.models';
+import {MethodOutput} from '../requests/requests.models';
 import {NativeNames, Parameter, Schema} from '../types';
 import {indent, writeFile} from '../utils';
 
@@ -24,11 +24,13 @@ export function generateFormService(
                       formSubDirName: string,
                       className: string,
                       methodName: string,
-                      method: MethodOutput) {
+                      method: MethodOutput,
+                      readOnly: string) {
   let content = '';
   const formName = 'form';
   const formArrayReset: string[] = [];
-  const constructor = getConstructor(name, formName, definitions, params, formArrayReset);
+  const formArrayPatch: string[] = [];
+  const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly);
 
   // Imports
   content += getImports(name, constructor);
@@ -48,7 +50,7 @@ export function generateFormService(
   content += `\n\n`;
 
   // Reset function
-  content += getFormResetFunction(formName, formArrayReset, methodName);
+  content += getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName);
 
   content += '}\n';
 
@@ -103,7 +105,7 @@ function getVariables(method: MethodOutput, formName: string): string {
 }
 
 function getConstructor(name: string, formName: string, definitions: ProcessedDefinition[],
-                        params: Parameter[], formArrayReset: string[]) {
+                        params: Parameter[], formArrayReset: string[], formArrayPatch: string[], readOnly: string) {
   let res = indent('constructor(\n');
   res += indent(`private ${_.lowerFirst(name)}Service: ${name}Service,\n`, 2);
   res += indent(') {\n');
@@ -113,7 +115,7 @@ function getConstructor(name: string, formName: string, definitions: ProcessedDe
   const formArrayMethods: string[] = [];
 
   const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes,
-    `this.${formName}`, formArrayMethods, 'value', 'value', formArrayReset);
+    `this.${formName}`, formArrayMethods, 'value', 'value', formArrayReset, formArrayPatch, readOnly);
   res += indent(`this.${formName} = new FormGroup({\n${formDefinition}\n});\n`, 2);
   res += indent(`this.defaultValue = this.${formName}.value;\n`, 2);
   res += indent(`this.serverErrorsSubject = new ReplaySubject<any>(1);\n`, 2);
@@ -125,7 +127,7 @@ function getConstructor(name: string, formName: string, definitions: ProcessedDe
 
   res += indent('}\n');
   res += '\n';
-  for (let method in formArrayMethods) {
+  for (const method in formArrayMethods) {
     res += formArrayMethods[method];
     res += '\n';
   }
@@ -136,8 +138,8 @@ function getConstructor(name: string, formName: string, definitions: ProcessedDe
 function walkParamOrProp(definition: Parameter[] | ProcessedDefinition, path: string[] = [],
                          definitions: _.Dictionary<ProcessedDefinition[]>, parentTypes: string[],
                          control: string, formArrayMethods: string[], formValue: string, formValueIF: string,
-                         formArrayReset: string[], formArrayParams: string = '',
-                         subArrayReset: string[] = [], parent: string = '', parents: string = '', nameParents: string = ''): string {
+                         formArrayReset: string[], formArrayPatch: string[], readOnly: string, formArrayParams = '',
+                         subArrayReset: string[] = [], subArrayPatch: string[] = [], parent = '', parents = '', nameParents = ''): string {
   const res: string[] = [];
   let schema: Record<string, Schema>;
   let required: string[];
@@ -171,11 +173,15 @@ function walkParamOrProp(definition: Parameter[] | ProcessedDefinition, path: st
     let newParentTypes: string[] = [];
     if (ref) newParentTypes = [...parentTypes, ref];
 
-    if (!param.readOnly || name == 'id') {
+    if (readOnly && name.endsWith(readOnly)) {
+      param.readOnly = true;
+    }
+
+    if (!param.readOnly || name === 'id') {
       const fieldDefinition = makeField(param, ref, name, newPath, isRequired, definitions, newParentTypes,
         `${control}['controls']['${name}']`, formArrayMethods,
         formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset,
-        formArrayParams, subArrayReset, parent, parents, nameParents);
+        formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents, readOnly);
 
       res.push(fieldDefinition);
     }
@@ -188,8 +194,8 @@ function makeField(param: Schema, ref: string,
                    name: string, path: string[], required: boolean,
                    definitions: _.Dictionary<ProcessedDefinition[]>, parentTypes: string[],
                    formControl: string, formArrayMethods: string[], formValue: string, formValueIF: string,
-                   formArrayReset: string[], formArrayParams: string, subArrayReset: string[], parent: string,
-                   parents: string, nameParents: string = ''): string {
+                   formArrayReset: string[], formArrayPatch: string[], formArrayParams: string, subArrayReset: string[],
+                   subArrayPatch: string[], parent: string, parents: string, nameParents = '', readOnly: string): string {
 
   let definition: ProcessedDefinition;
   let type = param.type;
@@ -211,9 +217,10 @@ function makeField(param: Schema, ref: string,
         const refType = param.items.$ref.replace(/^#\/definitions\//, '');
         definition = definitions[normalizeDef(refType)][0];
         const mySubArrayReset: string[] = [];
+        const mySubArrayPatch: string[] = [];
         const fields = walkParamOrProp(definition, path, definitions, parentTypes,
           formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF,
-          formArrayReset, formArrayParams + name + ': number' + ', ', mySubArrayReset, name,
+          formArrayReset, formArrayPatch, readOnly, formArrayParams + name + ': number' + ', ', mySubArrayReset, mySubArrayPatch, name,
           parents + name + ', ', nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
         control = 'FormArray';
         initializer = `[]`;
@@ -222,7 +229,7 @@ function makeField(param: Schema, ref: string,
         addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         addMethod += indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
         addMethod += indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
-        addMethod += indent(`if (position){\n`, 3);
+        addMethod += indent(`if (position !== undefined){\n`, 3);
         addMethod += indent(`control.insert(position, fg);\n`, 4);
         addMethod += indent(`} else {\n`, 3);
         addMethod += indent(`control.push(fg);\n`, 4);
@@ -232,7 +239,7 @@ function makeField(param: Schema, ref: string,
         formArrayMethods.push(addMethod);
 
         let removeMethod = '';
-        removeMethod += indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${formArrayParams} i: number): void {\n`);
+        removeMethod += indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} i: number): void {\n`);
         removeMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         removeMethod += indent(`control.removeAt(i);\n`, 2);
         removeMethod += indent(`}\n`);
@@ -241,26 +248,46 @@ function makeField(param: Schema, ref: string,
         if (formArrayParams === '') {
           let resetMethod = '';
           resetMethod += indent(`while ((<FormArray>${formControl}).length) {\n`);
-          resetMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(0);\n`, 2);
+          resetMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(0);\n`, 2);
           resetMethod += indent(`}\n`);
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           resetMethod += indent(`}\n`);
           formArrayReset.push(resetMethod);
+
+          let patchMethod = '';
+          patchMethod += indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
+          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 2);
+          mySubArrayPatch.forEach( subarray => {
+            patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
+          });
+          patchMethod += indent(`}\n`);
+          formArrayPatch.push(patchMethod);
         } else {
           let resetMethod = '';
           resetMethod += `(${parent}_object, ${parent}) => {\n`;
           resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_','-')))}(${parents}${formValue}.length);\n`, 2);
+          resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length);\n`, 2);
           mySubArrayReset.forEach( subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           resetMethod += indent(`}\n`);
           resetMethod += `}`;
           subArrayReset.push(resetMethod);
+
+          let patchMethod = '';
+          patchMethod += `(${parent}_object, ${parent}) => {\n`;
+          patchMethod += indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
+          patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 2);
+          mySubArrayReset.forEach( subarray => {
+            patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
+          });
+          patchMethod += indent(`}\n`);
+          patchMethod += `}`;
+          subArrayPatch.push(patchMethod);
         }
       }
     } else {
@@ -274,8 +301,8 @@ function makeField(param: Schema, ref: string,
 
     control = 'FormGroup';
     const fields = walkParamOrProp(definition, path, definitions, parentTypes,
-      formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayParams,
-      subArrayReset, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
+      formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, formArrayParams,
+      subArrayReset, subArrayPatch, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace('_', '-'))));
     initializer = `{\n${fields}\n}`;
   }
 
@@ -302,7 +329,7 @@ function getValidators(param: Parameter | Schema) {
 }
 
 function getFormSubmitFunction(name: string, formName: string, simpleName: string, paramGroups: Parameter[], methodName: string, method: MethodOutput) {
-  let res = "";
+  let res = '';
   if (methodName == 'get') {
     res += indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${ method.responseDef.type }> {\n`);
   } else {
@@ -317,11 +344,11 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`  value = {...value};\n`, 2);
     res += indent(`  const newBody = {};\n`, 2);
     res += indent(`  Object.keys(this.patchInitialValue.data).forEach(key => {\n`, 2);
-    res += indent(`   if (JSON.stringify(value.${method.paramGroups['body'][0]['name']}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups['body'][0]['name']}[key])) {\n`, 2);
-    res += indent(`     newBody[key] = value.${method.paramGroups['body'][0]['name']}[key];\n`, 2);
+    res += indent(`   if (JSON.stringify(value.${method.paramGroups.body[0].name}[key]) !== JSON.stringify(this.patchInitialValue.${method.paramGroups.body[0].name}[key])) {\n`, 2);
+    res += indent(`     newBody[key] = value.${method.paramGroups.body[0].name}[key];\n`, 2);
     res += indent(`   }\n`, 2);
     res += indent(`  });\n`, 2);
-    res += indent(`  value.${method.paramGroups['body'][0]['name']} = newBody;\n`, 2);
+    res += indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
   }
   res += indent(`}\n`, 2);
   res += indent(`if ( this.cacheSub[JSON.stringify(value)] ) {\n`, 2);
@@ -432,10 +459,10 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   return res;
 }
 
-function getFormResetFunction(formName: string, formArrayReset: string[], methodName: string) {
+function getFormResetFunction(formName: string, formArrayReset: string[], formArrayPatch: string[], methodName: string) {
   let res = indent('reset(value?: any): void {\n');
   res += indent(`this.${formName}.reset();\n`, 2);
-  for (let i in formArrayReset) {
+  for (const i in formArrayReset) {
     res += indent(formArrayReset[i]);
   }
   res += indent(`this.serverErrorsSubject.next(null);\n`, 2);
@@ -445,9 +472,16 @@ function getFormResetFunction(formName: string, formArrayReset: string[], method
   res += indent(`if (value) {\n`, 2);
   res += indent(`this.${formName}.patchValue(value);\n`, 3);
   res += indent('}\n', 2);
-  if (methodName == 'patch') {
+  if (methodName === 'patch') {
     res += indent(`this.patchInitialValue = this.${formName}.value;\n`, 2);
   }
+  res += indent('}\n\n');
+
+  res += indent('patch(value: any): void {\n');
+  for (const i in formArrayPatch) {
+    res += indent(formArrayPatch[i]);
+  }
+  res += indent(`this.${formName}.patchValue(value);\n`, 2);
   res += indent('}\n');
 
   return res;
