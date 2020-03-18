@@ -282,7 +282,7 @@ function makeField(param: Schema, ref: string,
           patchMethod += `(${parent}_object, ${parent}) => {\n`;
           patchMethod += indent(`if (${formValueIF} && ${formValue}.length > this.form.${formValue}.length) {\n`);
           patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 2);
-          mySubArrayReset.forEach( subarray => {
+          mySubArrayPatch.forEach( subarray => {
             patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           patchMethod += indent(`}\n`);
