@@ -17,6 +17,8 @@ import { catchError, finalize, map } from 'rxjs/operators';
 import { PetService } from '../../../controllers/Pet';
 import * as __model from '../../../model';
 import { environment } from 'environments/environment';
+import { APIConfigService } from '../../../apiconfig.service';
+
 
 @Injectable()
 export class PetUpdatePetFormService {
@@ -26,10 +28,11 @@ export class PetUpdatePetFormService {
   private serverErrorsSubject: ReplaySubject<any>;
   loading$: Observable<boolean>;
   private loadingSubject: ReplaySubject<boolean>;
-  private cache: any;
   private cacheSub: any;
+  private cache: string;
   constructor(
     private petService: PetService,
+    private apiConfigService: APIConfigService,
   ) {
     this.form = new FormGroup({
       body: new FormGroup({
@@ -49,8 +52,8 @@ export class PetUpdatePetFormService {
     this.serverErrors$ = this.serverErrorsSubject.asObservable();
     this.loadingSubject = new ReplaySubject<boolean>(1);
     this.loading$ = this.loadingSubject.asObservable();
-    this.cache = {};
     this.cacheSub = {};
+    this.cache = 'PetUpdatePet';
   }
 
   public addBodyTags( tags: number = 1, position?: number): void {
@@ -79,19 +82,19 @@ export class PetUpdatePetFormService {
     if (value === false) {
       value = this.form.value;
     }
-    if ( this.cacheSub[JSON.stringify(value)] ) {
-        return this.cacheSub[JSON.stringify(value)].asObservable();
+    if ( this.cacheSub[JSON.stringify(value) + cache] ) {
+        return this.cacheSub[JSON.stringify(value) + cache].asObservable();
     }
-    this.cacheSub[JSON.stringify(value)] = new ReplaySubject<string>(1);
-    const subject = this.cacheSub[JSON.stringify(value)];
+    this.cacheSub[JSON.stringify(value) + cache] = new ReplaySubject<string>(1);
+    const subject = this.cacheSub[JSON.stringify(value) + cache];
     let cache_hit = false;
-    if (cache && this.cache[JSON.stringify(value)]) {
-      subject.next({...this.cache[JSON.stringify(value)]});
+    if (cache && this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) {
+      subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]});
       cache_hit = true;
       if (only_cache) {
         subject.complete();
         this.loadingSubject.next(false);
-        delete this.cacheSub[JSON.stringify(value)];
+        delete this.cacheSub[JSON.stringify(value) + cache];
         return subject.asObservable();
       }
     }
@@ -104,14 +107,14 @@ export class PetUpdatePetFormService {
     const result = this.petService.updatePet(value);
     result.pipe(
       map(val => {
-        if (!cache_hit || this.cache[JSON.stringify(value)] !== val) {
+        if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {
           if (cache) {
-            this.cache[JSON.stringify(value)] = val;
+            this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;
           }
           subject.next(val);
         }
         subject.complete();
-        delete this.cacheSub[JSON.stringify(value)];
+        delete this.cacheSub[JSON.stringify(value) + cache];
         this.loadingSubject.next(false);
         return val;
       }),
@@ -125,7 +128,7 @@ export class PetUpdatePetFormService {
             this.serverErrorsSubject.next(error.error);
             subject.error(error);
             subject.complete();
-            delete this.cacheSub[JSON.stringify(value)];
+            delete this.cacheSub[JSON.stringify(value) + cache];
             this.loadingSubject.next(false);
         }
         return throwError(error);

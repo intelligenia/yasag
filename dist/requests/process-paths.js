@@ -22,7 +22,7 @@ const process_controller_1 = require("./process-controller");
  * @param environmentAPI
  * @param readOnly
  */
-function processPaths(pathsWithParameters, swaggerPath, config, definitions, basePath, environmentAPI, readOnly) {
+function processPaths(pathsWithParameters, swaggerPath, config, definitions, basePath, environmentAPI, readOnly, environmentCache) {
     const paths = preProcessPaths(pathsWithParameters);
     const controllers = _.flatMap(paths, (methods, url) => (_.map(methods, (method, methodName) => ({
         url,
@@ -51,7 +51,7 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
     utils_1.writeFile(allFormServiceFileName, content, config.header);
     // apiconfig.service.ts
-    config_service_1.createConfigService(config, environmentAPI);
+    config_service_1.createConfigService(config, environmentAPI, environmentCache);
 }
 exports.processPaths = processPaths;
 /**

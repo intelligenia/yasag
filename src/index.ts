@@ -17,6 +17,7 @@ commander
   .option('-v, --environment-var <environmentAPI>', `Name of the environment variable for the base path, default: ${conf.environmentAPI}`)
   .option('-h, --omit-header', `Omit print header on each file, default: ${conf.omitHeader}`)
   .option('-r, --read-only <ending>', `Omit attributes ending by <ending> in PUT, POST and PATCH methods, default: None`)
+  .option('-c, --environment-cache <environmentCache>', `Name of the environment variable for the cache size configuration, default name: ${conf.environmentCache}, default size 1000 elements`)
   .parse(process.argv);
 
 generate(commander.src,
@@ -28,4 +29,5 @@ generate(commander.src,
   commander.omitBasepath,
   commander.environmentVar,
   commander.omitHeader,
-  commander.readOnly);
+  commander.readOnly,
+  commander.environmentCache);

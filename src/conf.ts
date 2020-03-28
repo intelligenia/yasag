@@ -14,6 +14,7 @@ export const swaggerUrlPath = '/swagger';
 export const omitVersion = false;
 export const omitBasepath = false;
 export const environmentAPI = 'apiUrl';
+export const environmentCache = 'apiCacheSize';
 export const omitHeader = false;
 // part of path in url
 export const swaggerFile = '/swagger-ui.html#!/';

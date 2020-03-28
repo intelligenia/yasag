@@ -27,7 +27,7 @@ import {ControllerMethod, Paths, PathsWithParameters} from './requests.models';
  */
 export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPath: string, config: Config,
                              definitions: ProcessedDefinition[], basePath: string, environmentAPI: string,
-                             readOnly: string) {
+                             readOnly: string, environmentCache: string) {
 
   const paths = preProcessPaths(pathsWithParameters);
   const controllers: ControllerMethod[] = _.flatMap(paths, (methods, url: string) => (
@@ -65,7 +65,7 @@ export function processPaths(pathsWithParameters: PathsWithParameters, swaggerPa
   const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
   writeFile(allFormServiceFileName, content, config.header);
   // apiconfig.service.ts
-  createConfigService(config, environmentAPI);
+  createConfigService(config, environmentAPI, environmentCache);
 
 }
 

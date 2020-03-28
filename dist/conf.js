@@ -13,6 +13,7 @@ exports.swaggerUrlPath = '/swagger';
 exports.omitVersion = false;
 exports.omitBasepath = false;
 exports.environmentAPI = 'apiUrl';
+exports.environmentCache = 'apiCacheSize';
 exports.omitHeader = false;
 // part of path in url
 exports.swaggerFile = '/swagger-ui.html#!/';

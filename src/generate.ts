@@ -37,7 +37,8 @@ export function generate(
   omitBasepath = false,
   environmentAPI: string = conf.environmentAPI,
   omitHeader = false,
-  readOnly= '') {
+  readOnly= '',
+  environmentCache = conf.environmentCache) {
   let schema: any;
 
   try {
@@ -70,7 +71,7 @@ export function generate(
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);
   const definitions = processDefinitions(schema.definitions, config);
   processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`,
-               config, definitions, schema.basePath, environmentAPI, readOnly);
+               config, definitions, schema.basePath, environmentAPI, readOnly, environmentCache);
 }
 
 function recreateDirectories(dest: string, generateStore: boolean) {

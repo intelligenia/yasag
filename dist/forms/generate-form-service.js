@@ -11,7 +11,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     const formName = 'form';
     const formArrayReset = [];
     const formArrayPatch = [];
-    const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly);
+    const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly, className);
     // Imports
     content += getImports(name, constructor);
     // Class declaration
@@ -49,6 +49,7 @@ function getImports(name, constructor) {
     res += `import { ${name}Service } from '../../../controllers/${name}';\n`;
     res += `import * as __model from '../../../model';\n`;
     res += `import { environment } from 'environments/environment';\n`;
+    res += 'import { APIConfigService } from \'../../../apiconfig.service\';\n\n';
     res += '\n';
     return res;
 }
@@ -65,19 +66,20 @@ function getVariables(method, formName) {
     content += utils_1.indent(`private serverErrorsSubject: ReplaySubject<any>;\n`);
     content += utils_1.indent(`loading$: Observable<boolean>;\n`);
     content += utils_1.indent(`private loadingSubject: ReplaySubject<boolean>;\n`);
-    if (method.methodName == 'get') {
+    if (method.methodName === 'get') {
         content += utils_1.indent(`currentValue: any;\n`);
     }
-    if (method.methodName == 'patch') {
+    if (method.methodName === 'patch') {
         content += utils_1.indent(`patchInitialValue: any;\n`);
     }
-    content += utils_1.indent(`private cache: any;\n`);
     content += utils_1.indent(`private cacheSub: any;\n`);
+    content += utils_1.indent(`private cache: string;\n`);
     return content;
 }
-function getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly) {
+function getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly, className) {
     let res = utils_1.indent('constructor(\n');
     res += utils_1.indent(`private ${_.lowerFirst(name)}Service: ${name}Service,\n`, 2);
+    res += utils_1.indent(`private apiConfigService: APIConfigService,\n`, 2);
     res += utils_1.indent(') {\n');
     const definitionsMap = _.groupBy(definitions, 'name');
     const parentTypes = [];
@@ -89,8 +91,8 @@ function getConstructor(name, formName, definitions, params, formArrayReset, for
     res += utils_1.indent(`this.serverErrors$ = this.serverErrorsSubject.asObservable();\n`, 2);
     res += utils_1.indent(`this.loadingSubject = new ReplaySubject<boolean>(1);\n`, 2);
     res += utils_1.indent(`this.loading$ = this.loadingSubject.asObservable();\n`, 2);
-    res += utils_1.indent(`this.cache = {};\n`, 2);
     res += utils_1.indent(`this.cacheSub = {};\n`, 2);
+    res += utils_1.indent(`this.cache = '${className}';\n`, 2);
     res += utils_1.indent('}\n');
     res += '\n';
     for (const method in formArrayMethods) {
@@ -222,7 +224,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     patchMethod += `(${parent}_object, ${parent}) => {\n`;
                     patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
                     patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
-                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 3);
                     patchMethod += utils_1.indent(`}\n`, 2);
                     mySubArrayPatch.forEach(subarray => {
                         patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
@@ -291,25 +293,25 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
     }
     res += utils_1.indent(`}\n`, 2);
-    res += utils_1.indent(`if ( this.cacheSub[JSON.stringify(value)] ) {\n`, 2);
-    res += utils_1.indent(`    return this.cacheSub[JSON.stringify(value)].asObservable();\n`, 2);
+    res += utils_1.indent(`if ( this.cacheSub[JSON.stringify(value) + cache] ) {\n`, 2);
+    res += utils_1.indent(`    return this.cacheSub[JSON.stringify(value) + cache].asObservable();\n`, 2);
     res += utils_1.indent(`}\n`, 2);
-    res += utils_1.indent(`this.cacheSub[JSON.stringify(value)] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
-    res += utils_1.indent(`const subject = this.cacheSub[JSON.stringify(value)];\n`, 2);
+    res += utils_1.indent(`this.cacheSub[JSON.stringify(value) + cache] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
+    res += utils_1.indent(`const subject = this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
     res += utils_1.indent(`let cache_hit = false;\n`, 2);
     if (method.responseDef.type !== 'void') {
-        res += utils_1.indent(`if (cache && this.cache[JSON.stringify(value)]) {\n`, 2);
+        res += utils_1.indent(`if (cache && this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) {\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
-            res += utils_1.indent(`  subject.next([...this.cache[JSON.stringify(value)]]);\n`, 2);
+            res += utils_1.indent(`  subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]]);\n`, 2);
         }
         else {
-            res += utils_1.indent(`  subject.next({...this.cache[JSON.stringify(value)]});\n`, 2);
+            res += utils_1.indent(`  subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]});\n`, 2);
         }
         res += utils_1.indent(`  cache_hit = true;\n`, 2);
         res += utils_1.indent(`  if (only_cache) {\n`, 2);
         res += utils_1.indent(`    subject.complete();\n`, 2);
         res += utils_1.indent(`    this.loadingSubject.next(false);\n`, 2);
-        res += utils_1.indent(`    delete this.cacheSub[JSON.stringify(value)];\n`, 2);
+        res += utils_1.indent(`    delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
         res += utils_1.indent(`    return subject.asObservable();\n`, 2);
         res += utils_1.indent(`  }\n`, 2);
         res += utils_1.indent(`}\n`, 2);
@@ -328,7 +330,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         // If it is GET, then it checks if the currentValue has changed. It is necessary when replay the "try" due to a 500 error
         res += utils_1.indent(`if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {\n`, 2);
         res += utils_1.indent(`  subject.complete();\n`, 2);
-        res += utils_1.indent(`  delete this.cacheSub[JSON.stringify(value)];\n`, 2);
+        res += utils_1.indent(`  delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
         res += utils_1.indent(`  return;\n`, 2);
         res += utils_1.indent(`}\n`, 2);
     }
@@ -345,13 +347,13 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     else {
         if (method.responseDef.type === 'string') {
-            res += utils_1.indent(`    if (!cache_hit || this.cache[JSON.stringify(value)] !== val) {\n`, 2);
+            res += utils_1.indent(`    if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
         }
         else {
-            res += utils_1.indent(`    if (!cache_hit || JSON.stringify(this.cache[JSON.stringify(value)]) !== JSON.stringify(val)) {\n`, 2);
+            res += utils_1.indent(`    if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
         }
         res += utils_1.indent(`      if (cache) {\n`, 2);
-        res += utils_1.indent(`        this.cache[JSON.stringify(value)] = val;\n`, 2);
+        res += utils_1.indent(`        this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;\n`, 2);
         res += utils_1.indent(`      }\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
             res += utils_1.indent(`      subject.next([...val]);\n`, 2);
@@ -365,7 +367,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`    }\n`, 2);
     }
     res += utils_1.indent(`    subject.complete();\n`, 2);
-    res += utils_1.indent(`    delete this.cacheSub[JSON.stringify(value)];\n`, 2);
+    res += utils_1.indent(`    delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
     res += utils_1.indent(`    this.loadingSubject.next(false);\n`, 2);
     if (method.responseDef.type !== 'void') {
         res += utils_1.indent(`    return val;\n`, 2);
@@ -381,7 +383,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent(`        this.serverErrorsSubject.next(error.error);\n`, 2);
     res += utils_1.indent(`        subject.error(error);\n`, 2);
     res += utils_1.indent(`        subject.complete();\n`, 2);
-    res += utils_1.indent(`        delete this.cacheSub[JSON.stringify(value)];\n`, 2);
+    res += utils_1.indent(`        delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
     res += utils_1.indent(`        this.loadingSubject.next(false);\n`, 2);
     res += utils_1.indent(`    }\n`, 2);
     res += utils_1.indent(`    return throwError(error);\n`, 2);
