@@ -358,9 +358,9 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
   }
   res += indent(`}\n`, 2);
-  res += indent(`if ( this.cacheSub[JSON.stringify(value) + cache] ) {\n`, 2);
-  res += indent(`    return this.cacheSub[JSON.stringify(value) + cache].asObservable();\n`, 2);
-  res += indent(`}\n`, 2);
+  // res += indent(`if ( this.cacheSub[JSON.stringify(value) + cache] ) {\n`, 2);
+  // res += indent(`    return this.cacheSub[JSON.stringify(value) + cache].asObservable();\n`, 2);
+  // res += indent(`}\n`, 2);
   res += indent(`this.cacheSub[JSON.stringify(value) + cache] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
   res += indent(`const subject = this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
 
