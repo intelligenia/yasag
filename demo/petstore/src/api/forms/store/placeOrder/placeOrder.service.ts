@@ -59,9 +59,6 @@ export class StorePlaceOrderFormService {
     if (value === false) {
       value = this.form.value;
     }
-    if ( this.cacheSub[JSON.stringify(value) + cache] ) {
-        return this.cacheSub[JSON.stringify(value) + cache].asObservable();
-    }
     this.cacheSub[JSON.stringify(value) + cache] = new ReplaySubject<__model.Order>(1);
     const subject = this.cacheSub[JSON.stringify(value) + cache];
     let cache_hit = false;

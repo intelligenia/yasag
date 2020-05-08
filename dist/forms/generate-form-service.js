@@ -11,6 +11,8 @@ function generateFormService(config, name, params, definitions, simpleName, form
     const formName = 'form';
     const formArrayReset = [];
     const formArrayPatch = [];
+    const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
+    utils_1.out(`Generating ${componentHTMLFileName}`, utils_1.TermColors.default);
     const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly, className);
     // Imports
     content += getImports(name, constructor);
@@ -27,7 +29,6 @@ function generateFormService(config, name, params, definitions, simpleName, form
     // Reset function
     content += getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName);
     content += '}\n';
-    const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
     utils_1.writeFile(componentHTMLFileName, content, config.header);
 }
 exports.generateFormService = generateFormService;

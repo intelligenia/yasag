@@ -8,7 +8,7 @@ import {Config} from '../generate';
 import {parameterToSchema} from '../requests/process-params';
 import {MethodOutput} from '../requests/requests.models';
 import {NativeNames, Parameter, Schema} from '../types';
-import {indent, writeFile} from '../utils';
+import {indent, out, TermColors, writeFile} from '../utils';
 
 export interface FieldDefinition {
   content: string;
@@ -30,6 +30,10 @@ export function generateFormService(
   const formName = 'form';
   const formArrayReset: string[] = [];
   const formArrayPatch: string[] = [];
+  const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
+
+  out(`Generating ${componentHTMLFileName}`, TermColors.default);
+
   const constructor = getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly, className);
 
   // Imports
@@ -54,7 +58,6 @@ export function generateFormService(
 
   content += '}\n';
 
-  const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
   writeFile(componentHTMLFileName, content, config.header);
 }
 
