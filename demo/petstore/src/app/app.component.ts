@@ -28,7 +28,7 @@ export class AppComponent {
 
   deletePet(petId: number, event): void {
     this.petDelFS.submit({petId: petId}).pipe(
-      map(() => event.srcElement.parentElement.remove())
+      map(() => this.reloadPetList())
     ).subscribe();
   }
 

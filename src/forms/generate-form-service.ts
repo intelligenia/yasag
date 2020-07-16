@@ -77,6 +77,7 @@ function getImports(name: string, constructor: string) {
   res += `import * as __model from '../../../model';\n`;
   res += `import { environment } from 'environments/environment';\n`;
   res += 'import { APIConfigService } from \'../../../apiconfig.service\';\n\n';
+  res += 'import * as moment from \'moment\';\n\n';
 
   res += '\n';
 
@@ -349,7 +350,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   res += indent(`if (value === false) {\n`, 2);
   res += indent(`  value = this.${formName}.value;\n`, 2);
-  if (methodName == 'patch') {
+  if (methodName === 'patch') {
     // If it a PATCH, it deletes the unchanged properties
     res += indent(`  value = {...value};\n`, 2);
     res += indent(`  const newBody = {};\n`, 2);
@@ -361,17 +362,20 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
   }
   res += indent(`}\n`, 2);
-  // res += indent(`if ( this.cacheSub[JSON.stringify(value) + cache] ) {\n`, 2);
-  // res += indent(`    return this.cacheSub[JSON.stringify(value) + cache].asObservable();\n`, 2);
-  // res += indent(`}\n`, 2);
-  res += indent(`this.cacheSub[JSON.stringify(value) + cache] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
-  res += indent(`const subject = this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
+  res += indent(`const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');\n`, 2);
+  res += indent(`if ( this.cacheSub[cacheKey] ) {\n`, 2);
+  res += indent(`    return this.cacheSub[cacheKey].asObservable();\n`, 2);
+  res += indent(`}\n`, 2);
+  res += indent(`this.cacheSub[cacheKey] = new ReplaySubject<${method.responseDef.type}>(1);\n`, 2);
+  res += indent(`const subject = this.cacheSub[cacheKey];\n`, 2);
 
   res += indent(`let cache_hit = false;\n`, 2);
   if ( method.responseDef.type !== 'void' ) {
     res += indent(`if (cache && this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) {\n`, 2);
     if ( method.responseDef.type.indexOf('[]') > 0 ) {
       res += indent(`  subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]]);\n`, 2);
+    } else if ( method.responseDef.type === 'string' ) {
+      res += indent(`  subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]);\n`, 2);
     } else {
       res += indent(`  subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]});\n`, 2);
     }
@@ -379,7 +383,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`  if (only_cache) {\n`, 2);
     res += indent(`    subject.complete();\n`, 2);
     res += indent(`    this.loadingSubject.next(false);\n`, 2);
-    res += indent(`    delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
+    res += indent(`    delete this.cacheSub[cacheKey];\n`, 2);
     res += indent(`    return subject.asObservable();\n`, 2);
     res += indent(`  }\n`, 2);
     res += indent(`}\n`, 2);
@@ -389,17 +393,17 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   if (methodName == 'get') {
     res += indent(`this.currentValue = value;\n`, 2);
   }
-  res += indent(`this.try(subject, value, cache_hit, cache);\n`, 2);
+  res += indent(`this.try(subject, value, cache_hit, cache, cacheKey);\n`, 2);
   res += indent(`return subject.asObservable();\n`, 2);
   res += indent('}\n');
   res += indent('\n');
 
-  res += indent(`try(subject: ReplaySubject<${ method.responseDef.type }>, value: any, cache_hit: boolean, cache: boolean, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
-  if (methodName == 'get') {
+  res += indent(`try(subject: ReplaySubject<${ method.responseDef.type }>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
+  if (methodName === 'get') {
     // If it is GET, then it checks if the currentValue has changed. It is necessary when replay the "try" due to a 500 error
     res += indent(`if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {\n`, 2);
     res += indent(`  subject.complete();\n`, 2);
-    res += indent(`  delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
+    res += indent(`  delete this.cacheSub[cacheKey];\n`, 2);
     res += indent(`  return;\n`, 2);
     res += indent(`}\n`, 2);
   }
@@ -414,6 +418,9 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   if ( method.responseDef.type === 'void' ) {
     res += indent(`    subject.next();\n`, 2);
+    res += indent(`    if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+    res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
+    res += indent(`    }\n`, 2);
   } else {
     if ( method.responseDef.type === 'string' ) {
       res += indent(`    if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
@@ -426,16 +433,25 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
 
     if ( method.responseDef.type.indexOf('[]') > 0 ) {
       res += indent(`      subject.next([...val]);\n`, 2);
+      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
+      res += indent(`      }\n`, 2);
     } else if ( method.responseDef.type === 'string' ) {
       res += indent(`      subject.next(val);\n`, 2);
+      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
+      res += indent(`      }\n`, 2);
     } else {
       res += indent(`      subject.next({...val});\n`, 2);
+      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
+      res += indent(`      }\n`, 2);
     }
     res += indent(`    }\n`, 2);
   }
 
   res += indent(`    subject.complete();\n`, 2);
-  res += indent(`    delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
+  res += indent(`    delete this.cacheSub[cacheKey];\n`, 2);
   res += indent(`    this.loadingSubject.next(false);\n`, 2);
   if ( method.responseDef.type !== 'void' ) {
     res += indent(`    return val;\n`, 2);
@@ -444,14 +460,14 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent(`  catchError(error => {\n`, 2);
   res += indent(`    if (error.status >= 500 && maxRetries > 0) {\n`, 2);
   res += indent(`        // A client-side or network error occurred. Handle it accordingly.\n`, 2);
-  res += indent(`        setTimeout(() => this.try(subject, value, cache_hit, cache, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
+  res += indent(`        setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
   res += indent(`    } else {\n`, 2);
   res += indent(`        // The backend returned an unsuccessful response code.\n`, 2);
   res += indent(`        // The response body may contain clues as to what went wrong,\n`, 2);
   res += indent(`        this.serverErrorsSubject.next(error.error);\n`, 2);
   res += indent(`        subject.error(error);\n`, 2);
   res += indent(`        subject.complete();\n`, 2);
-  res += indent(`        delete this.cacheSub[JSON.stringify(value) + cache];\n`, 2);
+  res += indent(`        delete this.cacheSub[cacheKey];\n`, 2);
   res += indent(`        this.loadingSubject.next(false);\n`, 2);
   res += indent(`    }\n`, 2);
   res += indent(`    return throwError(error);\n`, 2);
@@ -465,6 +481,29 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent('  this.cacheSub = {};\n');
   res += indent('}\n');
   res += indent('\n');
+  res += indent('\n');
+  if (methodName === 'get') {
+    res += indent(`listen(value: any = false): Observable<${method.responseDef.type}> {\n`);
+    res += indent(`if (value === false) {\n`, 2);
+    res += indent(`  value = this.${formName}.value;\n`, 2);
+    res += indent(`}\n`, 2);
+    res += indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+    res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
+    res += indent(`}\n`, 2);
+    res += indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n`, 2);
+    if (method.responseDef.type.indexOf('[]') > 0) {
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]]);\n`, 2);
+    } else if (method.responseDef.type === 'string') {
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]);\n`, 2);
+    } else {
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});\n`, 2);
+    }
+    res += indent(`}\n`, 2);
+    res += indent(`this.submit(value);\n`, 2);
+    res += indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
+    res += indent('}\n');
+    res += indent('\n');
+  }
 
   return res;
 }
