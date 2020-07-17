@@ -295,7 +295,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
     }
     res += utils_1.indent(`}\n`, 2);
-    res += utils_1.indent(`const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');\n`, 2);
+    res += utils_1.indent(`const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');\n`, 2);
     res += utils_1.indent(`if ( this.cacheSub[cacheKey] ) {\n`, 2);
     res += utils_1.indent(`    return this.cacheSub[cacheKey].asObservable();\n`, 2);
     res += utils_1.indent(`}\n`, 2);

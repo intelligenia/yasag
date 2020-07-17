@@ -362,7 +362,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`  value.${method.paramGroups.body[0].name} = newBody;\n`, 2);
   }
   res += indent(`}\n`, 2);
-  res += indent(`const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');\n`, 2);
+  res += indent(`const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');\n`, 2);
   res += indent(`if ( this.cacheSub[cacheKey] ) {\n`, 2);
   res += indent(`    return this.cacheSub[cacheKey].asObservable();\n`, 2);
   res += indent(`}\n`, 2);
