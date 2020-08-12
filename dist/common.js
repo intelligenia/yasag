@@ -75,9 +75,6 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
     else if (Array.isArray(required) && !required.includes(name)) {
         optional = '?';
     }
-    let readOnly = '';
-    if (prop.readOnly)
-        readOnly = 'readonly ';
     const comments = [];
     if (prop.description)
         comments.push(prop.description);
@@ -94,7 +91,7 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
     if (name) {
         if (name.match(/-/))
             name = `'${name}'`;
-        property = `${comment}${readOnly}${name}${optional}: ${type};`;
+        property = `${comment}${name}${optional}: ${type};`;
         propertyAsMethodParameter = `${name}${optional}: ${type}`;
     }
     else {

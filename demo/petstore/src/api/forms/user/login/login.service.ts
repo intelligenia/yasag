@@ -54,7 +54,7 @@ export class UserLoginFormService {
     if (value === false) {
       value = this.form.value;
     }
-    const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');
+    const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');
     if ( this.cacheSub[cacheKey] ) {
         return this.cacheSub[cacheKey].asObservable();
     }
@@ -121,7 +121,7 @@ export class UserLoginFormService {
     Object.keys(this.cacheSub).forEach(key => this.cacheSub[key].unsubscribe());
     this.cacheSub = {};
   }
-  listen(value: any = false): Observable<string> {
+  listen(value: any = false, submit: boolean = true): Observable<string> {
     if (value === false) {
       value = this.form.value;
     }
@@ -131,7 +131,9 @@ export class UserLoginFormService {
     if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {
       this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]);
     }
-    this.submit(value);
+    if (submit) {
+     this.submit(value);
+    }
     return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();
   }
 

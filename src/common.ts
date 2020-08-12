@@ -86,9 +86,6 @@ export function processProperty(prop: Schema, name = '', namespace = '',
     optional = '?';
   }
 
-  let readOnly = '';
-  if (prop.readOnly) readOnly = 'readonly ';
-
   const comments = [];
   if (prop.description) comments.push(prop.description);
   if (prop.example) comments.push(`example: ${prop.example}`);
@@ -102,7 +99,7 @@ export function processProperty(prop: Schema, name = '', namespace = '',
   // pure type is returned if no name is specified
   if (name) {
     if (name.match(/-/)) name = `'${name}'`;
-    property = `${comment}${readOnly}${name}${optional}: ${type};`;
+    property = `${comment}${name}${optional}: ${type};`;
     propertyAsMethodParameter = `${name}${optional}: ${type}`;
   } else {
     property = `${type}`;

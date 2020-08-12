@@ -61,7 +61,7 @@ export class StorePlaceOrderFormService {
     if (value === false) {
       value = this.form.value;
     }
-    const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');
+    const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');
     if ( this.cacheSub[cacheKey] ) {
         return this.cacheSub[cacheKey].asObservable();
     }
@@ -121,6 +121,18 @@ export class StorePlaceOrderFormService {
   cancelPreviousRequest(): void {
     Object.keys(this.cacheSub).forEach(key => this.cacheSub[key].unsubscribe());
     this.cacheSub = {};
+  }
+  listen(value: any = false, submit: boolean = true): Observable<__model.Order> {
+    if (value === false) {
+      value = this.form.value;
+    }
+    if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
+      this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<__model.Order>(1)};
+    }
+    if (submit) {
+     this.submit(value);
+    }
+    return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();
   }
 
 

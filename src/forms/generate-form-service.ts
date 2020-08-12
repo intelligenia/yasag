@@ -482,14 +482,15 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent('}\n');
   res += indent('\n');
   res += indent('\n');
+
+  res += indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
+  res += indent(`if (value === false) {\n`, 2);
+  res += indent(`  value = this.${formName}.value;\n`, 2);
+  res += indent(`}\n`, 2);
+  res += indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+  res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
+  res += indent(`}\n`, 2);
   if (methodName === 'get') {
-    res += indent(`listen(value: any = false): Observable<${method.responseDef.type}> {\n`);
-    res += indent(`if (value === false) {\n`, 2);
-    res += indent(`  value = this.${formName}.value;\n`, 2);
-    res += indent(`}\n`, 2);
-    res += indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
-    res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
-    res += indent(`}\n`, 2);
     res += indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n`, 2);
     if (method.responseDef.type.indexOf('[]') > 0) {
       res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]]);\n`, 2);
@@ -499,11 +500,14 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
       res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});\n`, 2);
     }
     res += indent(`}\n`, 2);
-    res += indent(`this.submit(value);\n`, 2);
-    res += indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
-    res += indent('}\n');
-    res += indent('\n');
   }
+  res += indent(`if (submit) {\n`, 2);
+  res += indent(` this.submit(value);\n`, 2);
+  res += indent(`}\n`, 2);
+  res += indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
+  res += indent('}\n');
+  res += indent('\n');
+
 
   return res;
 }

@@ -415,14 +415,14 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent('}\n');
     res += utils_1.indent('\n');
     res += utils_1.indent('\n');
+    res += utils_1.indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
+    res += utils_1.indent(`if (value === false) {\n`, 2);
+    res += utils_1.indent(`  value = this.${formName}.value;\n`, 2);
+    res += utils_1.indent(`}\n`, 2);
+    res += utils_1.indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+    res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
+    res += utils_1.indent(`}\n`, 2);
     if (methodName === 'get') {
-        res += utils_1.indent(`listen(value: any = false): Observable<${method.responseDef.type}> {\n`);
-        res += utils_1.indent(`if (value === false) {\n`, 2);
-        res += utils_1.indent(`  value = this.${formName}.value;\n`, 2);
-        res += utils_1.indent(`}\n`, 2);
-        res += utils_1.indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
-        res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
-        res += utils_1.indent(`}\n`, 2);
         res += utils_1.indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
             res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]]);\n`, 2);
@@ -434,11 +434,13 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
             res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});\n`, 2);
         }
         res += utils_1.indent(`}\n`, 2);
-        res += utils_1.indent(`this.submit(value);\n`, 2);
-        res += utils_1.indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
-        res += utils_1.indent('}\n');
-        res += utils_1.indent('\n');
     }
+    res += utils_1.indent(`if (submit) {\n`, 2);
+    res += utils_1.indent(` this.submit(value);\n`, 2);
+    res += utils_1.indent(`}\n`, 2);
+    res += utils_1.indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
+    res += utils_1.indent('}\n');
+    res += utils_1.indent('\n');
     return res;
 }
 function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName) {

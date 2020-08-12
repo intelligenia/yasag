@@ -53,7 +53,7 @@ export class StoreGetOrderByIdFormService {
     if (value === false) {
       value = this.form.value;
     }
-    const cacheKey = JSON.stringify(value) + cache + moment().format('HHSS');
+    const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');
     if ( this.cacheSub[cacheKey] ) {
         return this.cacheSub[cacheKey].asObservable();
     }
@@ -120,7 +120,7 @@ export class StoreGetOrderByIdFormService {
     Object.keys(this.cacheSub).forEach(key => this.cacheSub[key].unsubscribe());
     this.cacheSub = {};
   }
-  listen(value: any = false): Observable<__model.Order> {
+  listen(value: any = false, submit: boolean = true): Observable<__model.Order> {
     if (value === false) {
       value = this.form.value;
     }
@@ -130,7 +130,9 @@ export class StoreGetOrderByIdFormService {
     if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {
       this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});
     }
-    this.submit(value);
+    if (submit) {
+     this.submit(value);
+    }
     return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();
   }
 
