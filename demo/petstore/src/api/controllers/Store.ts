@@ -50,7 +50,7 @@ export class StoreService {
    * Returns a map of status codes to quantities
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/getInventory
    */
-  inventory(): Observable<{[key: string]: number}> {
+  inventory(multipart = false): Observable<{[key: string]: number}> {
     return this.http.get<{[key: string]: number}>(this.apiConfigService.options.apiUrl + `/v2/store/inventory`);
   }
 
@@ -58,12 +58,16 @@ export class StoreService {
    * Place an order for a pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/placeOrder
    */
-  placeOrder(params: PlaceOrderParams): Observable<__model.Order> {
+  placeOrder(params: PlaceOrderParams, multipart = false): Observable<__model.Order> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.post<__model.Order>(this.apiConfigService.options.apiUrl + `/v2/store/order`, bodyParamsWithoutUndefined);
@@ -74,7 +78,7 @@ export class StoreService {
    * For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/getOrderById
    */
-  getOrderById(params: GetOrderByIdParams): Observable<__model.Order> {
+  getOrderById(params: GetOrderByIdParams, multipart = false): Observable<__model.Order> {
     const pathParams = {
       orderId: params.orderId,
     };
@@ -86,7 +90,7 @@ export class StoreService {
    * For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/deleteOrder
    */
-  deleteOrder(params: DeleteOrderParams): Observable<string> {
+  deleteOrder(params: DeleteOrderParams, multipart = false): Observable<string> {
     const pathParams = {
       orderId: params.orderId,
     };

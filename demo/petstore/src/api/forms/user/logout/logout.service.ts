@@ -33,6 +33,7 @@ export class UserLogoutFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private userService: UserService,
     private apiConfigService: APIConfigService,

@@ -33,6 +33,7 @@ export class UserGetUserByNameFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private userService: UserService,
     private apiConfigService: APIConfigService,
@@ -82,7 +83,7 @@ export class UserGetUserByNameFormService {
       delete this.cacheSub[cacheKey];
       return;
     }
-    const result = this.userService.getUserByName(value);
+    const result = this.userService.getUserByName(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {

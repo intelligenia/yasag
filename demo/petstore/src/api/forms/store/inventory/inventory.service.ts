@@ -33,6 +33,7 @@ export class StoreInventoryFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private storeService: StoreService,
     private apiConfigService: APIConfigService,

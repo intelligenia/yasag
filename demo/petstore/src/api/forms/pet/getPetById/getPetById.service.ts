@@ -33,6 +33,7 @@ export class PetGetPetByIdFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private petService: PetService,
     private apiConfigService: APIConfigService,
@@ -82,7 +83,7 @@ export class PetGetPetByIdFormService {
       delete this.cacheSub[cacheKey];
       return;
     }
-    const result = this.petService.getPetById(value);
+    const result = this.petService.getPetById(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {

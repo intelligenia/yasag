@@ -32,6 +32,7 @@ export class StorePlaceOrderFormService {
   private loadingSubject: ReplaySubject<boolean>;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private storeService: StoreService,
     private apiConfigService: APIConfigService,
@@ -84,7 +85,7 @@ export class StorePlaceOrderFormService {
     return subject.asObservable();
   }
   try(subject: ReplaySubject<__model.Order>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
-    const result = this.storeService.placeOrder(value);
+    const result = this.storeService.placeOrder(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {

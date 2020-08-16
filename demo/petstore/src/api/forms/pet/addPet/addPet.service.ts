@@ -32,6 +32,7 @@ export class PetAddPetFormService {
   private loadingSubject: ReplaySubject<boolean>;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private petService: PetService,
     private apiConfigService: APIConfigService,
@@ -107,7 +108,7 @@ export class PetAddPetFormService {
     return subject.asObservable();
   }
   try(subject: ReplaySubject<string>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
-    const result = this.petService.addPet(value);
+    const result = this.petService.addPet(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {
@@ -149,7 +150,7 @@ export class PetAddPetFormService {
     if (value === false) {
       value = this.form.value;
     }
-    if (!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
+    if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
       this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<string>(1)};
     }
     if (submit) {

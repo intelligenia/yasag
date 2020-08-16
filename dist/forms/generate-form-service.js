@@ -76,6 +76,7 @@ function getVariables(method, formName) {
     }
     content += utils_1.indent(`private cacheSub: any;\n`);
     content += utils_1.indent(`private cache: string;\n`);
+    content += utils_1.indent(`public multipart = false;\n`);
     return content;
 }
 function getConstructor(name, formName, definitions, params, formArrayReset, formArrayPatch, readOnly, className) {
@@ -340,7 +341,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`  return;\n`, 2);
         res += utils_1.indent(`}\n`, 2);
     }
-    res += utils_1.indent(`const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value', paramGroups)});\n`, 2);
+    res += utils_1.indent(`const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value, this.multipart', paramGroups)});\n`, 2);
     res += utils_1.indent(`result.pipe(\n`, 2);
     if (method.responseDef.type === 'void') {
         res += utils_1.indent(`  map(() => {\n`, 2);

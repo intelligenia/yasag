@@ -68,12 +68,16 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUser
    */
-  createUser(params: CreateUserParams): Observable<string> {
+  createUser(params: CreateUserParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -83,12 +87,16 @@ export class UserService {
    * Creates list of users with given input array
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithArrayInput
    */
-  createWithArray(params: CreateWithArrayParams): Observable<string> {
+  createWithArray(params: CreateWithArrayParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -98,12 +106,16 @@ export class UserService {
    * Creates list of users with given input array
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithListInput
    */
-  createWithList(params: CreateWithListParams): Observable<string> {
+  createWithList(params: CreateWithListParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -113,7 +125,7 @@ export class UserService {
    * Logs user into the system
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/loginUser
    */
-  login(params: LoginParams): Observable<string> {
+  login(params: LoginParams, multipart = false): Observable<string> {
     const queryParamBase = {
       username: params.username,
       password: params.password,
@@ -144,7 +156,7 @@ export class UserService {
    * Logs out current logged in user session
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/logoutUser
    */
-  logout(): Observable<string> {
+  logout(multipart = false): Observable<string> {
     return this.http.get(this.apiConfigService.options.apiUrl + `/v2/user/logout`, {responseType: 'text'});
   }
 
@@ -152,7 +164,7 @@ export class UserService {
    * Get user by user name
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/getUserByName
    */
-  getUserByName(params: GetUserByNameParams): Observable<__model.User> {
+  getUserByName(params: GetUserByNameParams, multipart = false): Observable<__model.User> {
     const pathParams = {
       username: params.username,
     };
@@ -164,15 +176,19 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/updateUser
    */
-  updateUser(params: UpdateUserParams): Observable<string> {
+  updateUser(params: UpdateUserParams, multipart = false): Observable<string> {
     const pathParams = {
       username: params.username,
     };
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.put(this.apiConfigService.options.apiUrl + `/v2/user/${pathParams.username}`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -183,7 +199,7 @@ export class UserService {
    * This can only be done by the logged in user.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/deleteUser
    */
-  deleteUser(params: DeleteUserParams): Observable<string> {
+  deleteUser(params: DeleteUserParams, multipart = false): Observable<string> {
     const pathParams = {
       username: params.username,
     };

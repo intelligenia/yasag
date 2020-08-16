@@ -112,7 +112,7 @@ function getSplitParamsMethod(method: ControllerMethod, processedParams: Process
  * @param paramsType
  */
 function getParamsSignature(processedParams: ProcessParamsOutput, paramsType: string) {
-  return !processedParams.isInterfaceEmpty ? `params: ${paramsType}` : '';
+  return (!processedParams.isInterfaceEmpty ? `params: ${paramsType}, ` : '') + 'multipart = false';
 }
 
 function getSplitParamsSignature(paramsOutput: ProcessParamsOutput): string {
@@ -177,10 +177,14 @@ function getParamSeparation(paramGroups: Dictionary<Parameter[]>): string[] {
 
       // bodyParams keys with value === undefined are removed
       let res = `const ${groupName}Params = ${def}\n`;
-      res += 'const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};\n';
+      res += 'const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};\n';
       res += 'Object.entries(bodyParams || {}).forEach(([key, value]) => {\n';
       res += '  if (value !== undefined) {\n';
-      res += '    bodyParamsWithoutUndefined[key] = value;\n';
+      res += '    if (multipart) {\n';
+      res += '      bodyParamsWithoutUndefined.append(key, value);\n';
+      res += '    } else {\n';
+      res += '      bodyParamsWithoutUndefined[key] = value;\n';
+      res += '    }\n';
       res += '  }\n';
       res += '});';
 

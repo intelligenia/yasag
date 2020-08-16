@@ -33,6 +33,7 @@ export class StoreGetOrderByIdFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private storeService: StoreService,
     private apiConfigService: APIConfigService,
@@ -82,7 +83,7 @@ export class StoreGetOrderByIdFormService {
       delete this.cacheSub[cacheKey];
       return;
     }
-    const result = this.storeService.getOrderById(value);
+    const result = this.storeService.getOrderById(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {

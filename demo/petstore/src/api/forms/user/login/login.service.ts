@@ -33,6 +33,7 @@ export class UserLoginFormService {
   currentValue: any;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private userService: UserService,
     private apiConfigService: APIConfigService,
@@ -83,7 +84,7 @@ export class UserLoginFormService {
       delete this.cacheSub[cacheKey];
       return;
     }
-    const result = this.userService.login(value);
+    const result = this.userService.login(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {

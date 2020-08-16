@@ -32,6 +32,7 @@ export class PetUpdatePetWithFormFormService {
   private loadingSubject: ReplaySubject<boolean>;
   private cacheSub: any;
   private cache: string;
+  public multipart = false;
   constructor(
     private petService: PetService,
     private apiConfigService: APIConfigService,
@@ -79,7 +80,7 @@ export class PetUpdatePetWithFormFormService {
     return subject.asObservable();
   }
   try(subject: ReplaySubject<string>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
-    const result = this.petService.updatePetWithForm(value);
+    const result = this.petService.updatePetWithForm(value, this.multipart);
     result.pipe(
       map(val => {
         if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {

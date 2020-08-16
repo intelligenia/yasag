@@ -93,12 +93,16 @@ export class PetService {
    * Add a new pet to the store
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/addPet
    */
-  addPet(params: AddPetParams): Observable<string> {
+  addPet(params: AddPetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -108,12 +112,16 @@ export class PetService {
    * Update an existing pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePet
    */
-  updatePet(params: UpdatePetParams): Observable<string> {
+  updatePet(params: UpdatePetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = Array.isArray(bodyParams) ? [] : {};
+    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
     Object.entries(bodyParams || {}).forEach(([key, value]) => {
       if (value !== undefined) {
-        bodyParamsWithoutUndefined[key] = value;
+        if (multipart) {
+          bodyParamsWithoutUndefined.append(key, value);
+        } else {
+          bodyParamsWithoutUndefined[key] = value;
+        }
       }
     });
     return this.http.put(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
@@ -124,7 +132,7 @@ export class PetService {
    * Multiple status values can be provided with comma separated strings
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/findPetsByStatus
    */
-  findByStatus(params: FindByStatusParams): Observable<__model.Pet[]> {
+  findByStatus(params: FindByStatusParams, multipart = false): Observable<__model.Pet[]> {
     const queryParamBase = {
       status: params.status,
     };
@@ -155,7 +163,7 @@ export class PetService {
    * Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/findPetsByTags
    */
-  findByTags(params: FindByTagsParams): Observable<__model.Pet[]> {
+  findByTags(params: FindByTagsParams, multipart = false): Observable<__model.Pet[]> {
     const queryParamBase = {
       tags: params.tags,
     };
@@ -186,7 +194,7 @@ export class PetService {
    * Returns a single pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/getPetById
    */
-  getPetById(params: GetPetByIdParams): Observable<__model.Pet> {
+  getPetById(params: GetPetByIdParams, multipart = false): Observable<__model.Pet> {
     const pathParams = {
       petId: params.petId,
     };
@@ -197,7 +205,7 @@ export class PetService {
    * Updates a pet in the store with form data
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePetWithForm
    */
-  updatePetWithForm(params: UpdatePetWithFormParams): Observable<string> {
+  updatePetWithForm(params: UpdatePetWithFormParams, multipart = false): Observable<string> {
     const pathParams = {
       petId: params.petId,
     };
@@ -212,7 +220,7 @@ export class PetService {
    * Deletes a pet
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/deletePet
    */
-  deletePet(params: DeletePetParams): Observable<string> {
+  deletePet(params: DeletePetParams, multipart = false): Observable<string> {
     const pathParams = {
       petId: params.petId,
     };
@@ -223,7 +231,7 @@ export class PetService {
    * uploads an image
    * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/uploadFile
    */
-  uploadImage(params: UploadImageParams): Observable<__model.ApiResponse> {
+  uploadImage(params: UploadImageParams, multipart = false): Observable<__model.ApiResponse> {
     const pathParams = {
       petId: params.petId,
     };

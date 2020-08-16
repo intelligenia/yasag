@@ -106,6 +106,7 @@ function getVariables(method: MethodOutput, formName: string): string {
   }
   content += indent(`private cacheSub: any;\n`);
   content += indent(`private cache: string;\n`);
+  content += indent(`public multipart = false;\n`);
   return content;
 }
 
@@ -408,7 +409,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`}\n`, 2);
   }
   res += indent(
-    `const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value', paramGroups)});\n`, 2);
+    `const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value, this.multipart', paramGroups)});\n`, 2);
 
   res += indent(`result.pipe(\n`, 2);
   if ( method.responseDef.type === 'void' ) {
