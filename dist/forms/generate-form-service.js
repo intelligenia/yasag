@@ -171,11 +171,14 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                 control = 'FormArray';
                 initializer = `[]`;
                 let addMethod = '';
-                addMethod += utils_1.indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+                addMethod += utils_1.indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
                 addMethod += utils_1.indent(`const control = <FormArray>${formControl};\n`, 2);
                 addMethod += utils_1.indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
                 addMethod += utils_1.indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
-                addMethod += utils_1.indent(`if (position !== undefined){\n`, 3);
+                addMethod += utils_1.indent(`if (value !== undefined) {\n`, 3);
+                addMethod += utils_1.indent(`fg.patchValue(value);\n`, 4);
+                addMethod += utils_1.indent(`}\n`, 3);
+                addMethod += utils_1.indent(`if (position !== undefined) {\n`, 3);
                 addMethod += utils_1.indent(`control.insert(position, fg);\n`, 4);
                 addMethod += utils_1.indent(`} else {\n`, 3);
                 addMethod += utils_1.indent(`control.push(fg);\n`, 4);
@@ -351,8 +354,11 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     if (method.responseDef.type === 'void') {
         res += utils_1.indent(`    subject.next();\n`, 2);
-        res += utils_1.indent(`    if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+        res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
         res += utils_1.indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
+        res += utils_1.indent(`    }\n`, 2);
+        res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+        res += utils_1.indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
         res += utils_1.indent(`    }\n`, 2);
     }
     else {
@@ -367,20 +373,29 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`      }\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
             res += utils_1.indent(`      subject.next([...val]);\n`, 2);
-            res += utils_1.indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
             res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
             res += utils_1.indent(`      }\n`, 2);
         }
         else if (method.responseDef.type === 'string') {
             res += utils_1.indent(`      subject.next(val);\n`, 2);
-            res += utils_1.indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
             res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
             res += utils_1.indent(`      }\n`, 2);
         }
         else {
             res += utils_1.indent(`      subject.next({...val});\n`, 2);
-            res += utils_1.indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
             res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
             res += utils_1.indent(`      }\n`, 2);
         }
         res += utils_1.indent(`    }\n`, 2);
@@ -416,30 +431,43 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     res += utils_1.indent('}\n');
     res += utils_1.indent('\n');
     res += utils_1.indent('\n');
+    if (methodName === 'get') {
+        res += utils_1.indent(`cleanCache(value: any = false): void {\n`);
+        res += utils_1.indent('  if (value === false) {\n');
+        res += utils_1.indent('    value = this.form.value;\n');
+        res += utils_1.indent('  }\n');
+        res += utils_1.indent('  if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n');
+        res += utils_1.indent('    delete this.apiConfigService.cache[this.cache + JSON.stringify(value) + true];\n');
+        res += utils_1.indent('  }\n');
+        res += utils_1.indent('}\n');
+        res += utils_1.indent('\n');
+        res += utils_1.indent('\n');
+    }
     res += utils_1.indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
-    res += utils_1.indent(`if (value === false) {\n`, 2);
-    res += utils_1.indent(`  value = this.${formName}.value;\n`, 2);
+    res += utils_1.indent(`let cacheValue = value;\n`, 2);
+    res += utils_1.indent(`if (cacheValue === false) {\n`, 2);
+    res += utils_1.indent(`  cacheValue = 'ALL';\n`, 2);
     res += utils_1.indent(`}\n`, 2);
-    res += utils_1.indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
-    res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
+    res += utils_1.indent(`if (!this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)]) {\n`, 2);
+    res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)] = {fs: this, payload: cacheValue, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
     res += utils_1.indent(`}\n`, 2);
     if (methodName === 'get') {
-        res += utils_1.indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n`, 2);
+        res += utils_1.indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]) {\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
-            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]]);\n`, 2);
+            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]]);\n`, 2);
         }
         else if (method.responseDef.type === 'string') {
-            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]);\n`, 2);
+            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]);\n`, 2);
         }
         else {
-            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});\n`, 2);
+            res += utils_1.indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]});\n`, 2);
         }
         res += utils_1.indent(`}\n`, 2);
     }
     res += utils_1.indent(`if (submit) {\n`, 2);
     res += utils_1.indent(` this.submit(value);\n`, 2);
     res += utils_1.indent(`}\n`, 2);
-    res += utils_1.indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
+    res += utils_1.indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();\n`, 2);
     res += utils_1.indent('}\n');
     res += utils_1.indent('\n');
     return res;

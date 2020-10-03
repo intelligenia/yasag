@@ -92,8 +92,11 @@ export class UserLoginFormService {
             this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;
           }
           subject.next(val);
-          if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
+          if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
             this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);
+          }
+          if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {
+            this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);
           }
         }
         subject.complete();
@@ -122,20 +125,29 @@ export class UserLoginFormService {
     Object.keys(this.cacheSub).forEach(key => this.cacheSub[key].unsubscribe());
     this.cacheSub = {};
   }
-  listen(value: any = false, submit: boolean = true): Observable<string> {
+  cleanCache(value: any = false): void {
     if (value === false) {
       value = this.form.value;
     }
-    if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
-      this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<string>(1)};
-    }
     if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {
-      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]);
+      delete this.apiConfigService.cache[this.cache + JSON.stringify(value) + true];
+    }
+  }
+  listen(value: any = false, submit: boolean = true): Observable<string> {
+    let cacheValue = value;
+    if (cacheValue === false) {
+      cacheValue = 'ALL';
+    }
+    if (!this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)]) {
+      this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)] = {fs: this, payload: cacheValue, subject: new ReplaySubject<string>(1)};
+    }
+    if (this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]) {
+      this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]);
     }
     if (submit) {
      this.submit(value);
     }
-    return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();
+    return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();
   }
 
 

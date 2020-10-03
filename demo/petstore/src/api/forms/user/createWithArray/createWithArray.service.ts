@@ -49,7 +49,7 @@ export class UserCreateWithArrayFormService {
     this.cache = 'UserCreateWithArray';
   }
 
-  public addBody( body: number = 1, position?: number): void {
+  public addBody( body: number = 1, position?: number, value?: any): void {
     const control = <FormArray>this.form['controls']['body'];
     for (let i = 0; i < body; i++) {
       const fg = new FormGroup({
@@ -62,7 +62,10 @@ export class UserCreateWithArrayFormService {
         phone: new FormControl({value: undefined, disabled: false}, []),
         userStatus: new FormControl({value: undefined, disabled: false}, []),
       }, []);
-      if (position !== undefined){
+      if (value !== undefined) {
+        fg.patchValue(value);
+      }
+      if (position !== undefined) {
         control.insert(position, fg);
       } else {
         control.push(fg);
@@ -112,8 +115,11 @@ export class UserCreateWithArrayFormService {
             this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;
           }
           subject.next(val);
-          if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
+          if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
             this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);
+          }
+          if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {
+            this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);
           }
         }
         subject.complete();
@@ -143,16 +149,17 @@ export class UserCreateWithArrayFormService {
     this.cacheSub = {};
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
-    if (value === false) {
-      value = this.form.value;
+    let cacheValue = value;
+    if (cacheValue === false) {
+      cacheValue = 'ALL';
     }
-    if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){
-      this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<string>(1)};
+    if (!this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)]) {
+      this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)] = {fs: this, payload: cacheValue, subject: new ReplaySubject<string>(1)};
     }
     if (submit) {
      this.submit(value);
     }
-    return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();
+    return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();
   }
 
 

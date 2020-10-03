@@ -233,11 +233,14 @@ function makeField(param: Schema, ref: string,
         control = 'FormArray';
         initializer = `[]`;
         let addMethod = '';
-        addMethod += indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} ${name}: number = 1, position?: number): void {\n`);
+        addMethod += indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
         addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
         addMethod += indent(`for (let i = 0; i < ${name}; i++) {\n`, 2);
         addMethod += indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 3);
-        addMethod += indent(`if (position !== undefined){\n`, 3);
+        addMethod += indent(`if (value !== undefined) {\n`, 3);
+        addMethod += indent(`fg.patchValue(value);\n`, 4);
+        addMethod += indent(`}\n`, 3);
+        addMethod += indent(`if (position !== undefined) {\n`, 3);
         addMethod += indent(`control.insert(position, fg);\n`, 4);
         addMethod += indent(`} else {\n`, 3);
         addMethod += indent(`control.push(fg);\n`, 4);
@@ -419,8 +422,11 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   if ( method.responseDef.type === 'void' ) {
     res += indent(`    subject.next();\n`, 2);
-    res += indent(`    if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+    res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
     res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
+    res += indent(`    }\n`, 2);
+    res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+    res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
     res += indent(`    }\n`, 2);
   } else {
     if ( method.responseDef.type === 'string' ) {
@@ -434,18 +440,27 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
 
     if ( method.responseDef.type.indexOf('[]') > 0 ) {
       res += indent(`      subject.next([...val]);\n`, 2);
-      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
       res += indent(`      }\n`, 2);
     } else if ( method.responseDef.type === 'string' ) {
       res += indent(`      subject.next(val);\n`, 2);
-      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
       res += indent(`      }\n`, 2);
     } else {
       res += indent(`      subject.next({...val});\n`, 2);
-      res += indent(`      if(this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
       res += indent(`      }\n`, 2);
     }
     res += indent(`    }\n`, 2);
@@ -484,28 +499,42 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent('\n');
   res += indent('\n');
 
+  if (methodName === 'get') {
+    res += indent(`cleanCache(value: any = false): void {\n`);
+    res += indent('  if (value === false) {\n');
+    res += indent('    value = this.form.value;\n');
+    res += indent('  }\n');
+    res += indent('  if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n');
+    res += indent('    delete this.apiConfigService.cache[this.cache + JSON.stringify(value) + true];\n');
+    res += indent('  }\n');
+    res += indent('}\n');
+    res += indent('\n');
+    res += indent('\n');
+  }
+
   res += indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
-  res += indent(`if (value === false) {\n`, 2);
-  res += indent(`  value = this.${formName}.value;\n`, 2);
+  res += indent(`let cacheValue = value;\n`, 2);
+  res += indent(`if (cacheValue === false) {\n`, 2);
+  res += indent(`  cacheValue = 'ALL';\n`, 2);
   res += indent(`}\n`, 2);
-  res += indent(`if(!this.apiConfigService.listeners[this.cache + JSON.stringify(value)]){\n`, 2);
-  res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)] = {fs: this, payload: value, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
+  res += indent(`if (!this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)]) {\n`, 2);
+  res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)] = {fs: this, payload: cacheValue, subject: new ReplaySubject<${method.responseDef.type}>(1)};\n`, 2);
   res += indent(`}\n`, 2);
   if (methodName === 'get') {
-    res += indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {\n`, 2);
+    res += indent(`if (this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]) {\n`, 2);
     if (method.responseDef.type.indexOf('[]') > 0) {
-      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]]);\n`, 2);
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]]);\n`, 2);
     } else if (method.responseDef.type === 'string') {
-      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]);\n`, 2);
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]);\n`, 2);
     } else {
-      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]});\n`, 2);
+      res += indent(`  this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]});\n`, 2);
     }
     res += indent(`}\n`, 2);
   }
   res += indent(`if (submit) {\n`, 2);
   res += indent(` this.submit(value);\n`, 2);
   res += indent(`}\n`, 2);
-  res += indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.asObservable();\n`, 2);
+  res += indent(`return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();\n`, 2);
   res += indent('}\n');
   res += indent('\n');
 
