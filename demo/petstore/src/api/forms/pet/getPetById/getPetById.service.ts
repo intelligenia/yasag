@@ -132,7 +132,6 @@ export class PetGetPetByIdFormService {
       delete this.apiConfigService.cache[this.cache + JSON.stringify(value) + true];
     }
   }
-
   listen(value: any = false, submit: boolean = true): Observable<__model.Pet> {
     let cacheValue = value;
     if (cacheValue === false) {

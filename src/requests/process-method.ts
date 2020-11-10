@@ -7,7 +7,7 @@ import * as conf from '../conf';
 import {Parameter} from '../types';
 import {indent, makeComment} from '../utils';
 import {processParams, ProcessParamsOutput} from './process-params';
-import {ControllerMethod, Dictionary, MethodOutput} from './requests.models';
+import {ControllerMethod, Dictionary, MethodOutput, ResponseDef} from './requests.models';
 
 /**
  * Transforms method definition to typescript method
@@ -50,7 +50,7 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
     }
   }
 
-  params = getRequestParams(paramTypes, method.methodName, method.responseDef.type);
+  params = getRequestParams(paramTypes, method.methodName, method.responseDef.type, method.responseDef);
 
   methodDef += '\n';
   methodDef += makeComment([method.summary, method.description, method.swaggerUrl].filter(Boolean));
@@ -58,7 +58,11 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
   if (responseType === 'string') {
     responseType = '';
   }
-  methodDef += `${method.simpleName}(${paramsSignature}): Observable<${method.responseDef.type}> {\n`;
+  let observableType = method.responseDef.type;
+  if (observableType === 'string' && method.responseDef.format === 'binary') {
+    observableType = 'Blob';
+  }
+  methodDef += `${method.simpleName}(${paramsSignature}): Observable<${observableType}> {\n`;
 
   // apply the param definitions, e.g. bodyParams
   methodDef += indent(paramSeparation);
@@ -90,7 +94,8 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
     responseDef,
     simpleName,
     methodName,
-    method};
+    method
+  };
 }
 
 function getSplitParamsMethod(method: ControllerMethod, processedParams: ProcessParamsOutput) {
@@ -204,7 +209,7 @@ function getParamSeparation(paramGroups: Dictionary<Parameter[]>): string[] {
  * @param methodName name of http method to invoke
  * @param responseType type of the expected response
  */
-function getRequestParams(paramTypes: string[], methodName: string, responseType: string) {
+function getRequestParams(paramTypes: string[], methodName: string, responseType: string, responseObject: ResponseDef) {
   let res = '';
 
   if (['post', 'put', 'patch'].includes(methodName)) {
@@ -225,7 +230,11 @@ function getRequestParams(paramTypes: string[], methodName: string, responseType
     if (optionParams.length > 0) {
       optionParams += ', ';
     }
-    optionParams += 'responseType: \'text\'';
+    if (responseObject.format && responseObject.format === 'binary') {
+      optionParams += 'responseType: \'blob\'';
+    } else {
+      optionParams += 'responseType: \'text\'';
+    }
   }
   if (optionParams.length > 0) {
     res += `, {${optionParams}}`;

@@ -98,7 +98,8 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
         property = `${type}`;
         propertyAsMethodParameter = property;
     }
-    return { property, propertyAsMethodParameter, enumDeclaration, native, isRequired: optional !== '?' };
+    const format = prop.format;
+    return { property, format, propertyAsMethodParameter, enumDeclaration, native, isRequired: optional !== '?' };
 }
 exports.processProperty = processProperty;
 /**

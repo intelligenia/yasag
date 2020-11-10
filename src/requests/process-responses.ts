@@ -29,7 +29,8 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
     if (response.schema && response.schema.properties) {
       const processedDefinition = processNestedSchemaDefinition(response.schema, name, config);
       const propertyOutput: PropertyOutput = {
-        property: `__model.${processedDefinition.name.replace('[','').replace(']','')}`,
+        property: `__model.${processedDefinition.name.replace('[', '').replace(']', '')}`,
+        format: response.schema.format,
         propertyAsMethodParameter: '',
         enumDeclaration: undefined,
         native: false,
@@ -42,17 +43,20 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
   }
 
   const property = _.map(properties, 'property');
+  let format_array = _.map(properties, 'format');
   const enumDeclaration = _.map(properties, 'enumDeclaration').filter(Boolean).join('\n\n');
   const usesGlobalType = properties.some(p => !p.native);
 
   let type: string;
+  let format: string;
   if (property.length) {
     type = _.uniqWith(property, _.isEqual).join(' | ');
+    format = _.uniqWith(format_array, _.isEqual).join(' | ');
   } else {
     type = 'string';
   }
 
-  return {type, enumDeclaration, usesGlobalType};
+  return {type, format, enumDeclaration, usesGlobalType};
 }
 
 function processNestedSchemaDefinition(schema: Schema, name: string, config: Config): ProcessedDefinition {

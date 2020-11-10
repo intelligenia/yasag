@@ -24,6 +24,7 @@ function processResponses(httpResponse, name, config) {
             const processedDefinition = processNestedSchemaDefinition(response.schema, name, config);
             const propertyOutput = {
                 property: `__model.${processedDefinition.name.replace('[', '').replace(']', '')}`,
+                format: response.schema.format,
                 propertyAsMethodParameter: '',
                 enumDeclaration: undefined,
                 native: false,
@@ -36,16 +37,19 @@ function processResponses(httpResponse, name, config) {
         }
     }
     const property = _.map(properties, 'property');
+    let format_array = _.map(properties, 'format');
     const enumDeclaration = _.map(properties, 'enumDeclaration').filter(Boolean).join('\n\n');
     const usesGlobalType = properties.some(p => !p.native);
     let type;
+    let format;
     if (property.length) {
         type = _.uniqWith(property, _.isEqual).join(' | ');
+        format = _.uniqWith(format_array, _.isEqual).join(' | ');
     }
     else {
         type = 'string';
     }
-    return { type, enumDeclaration, usesGlobalType };
+    return { type, format, enumDeclaration, usesGlobalType };
 }
 exports.processResponses = processResponses;
 function processNestedSchemaDefinition(schema, name, config) {

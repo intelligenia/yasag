@@ -6,6 +6,7 @@ import {indent, makeComment} from './utils';
 
 export interface PropertyOutput {
   property: string;
+  format: string;
   propertyAsMethodParameter: string;
   enumDeclaration: string;
   native: boolean;
@@ -105,8 +106,9 @@ export function processProperty(prop: Schema, name = '', namespace = '',
     property = `${type}`;
     propertyAsMethodParameter = property;
   }
+  const format = prop.format;
 
-  return {property, propertyAsMethodParameter, enumDeclaration, native, isRequired: optional !== '?'};
+  return {property, format, propertyAsMethodParameter, enumDeclaration, native, isRequired: optional !== '?'};
 }
 
 /**

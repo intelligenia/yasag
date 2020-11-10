@@ -20,6 +20,7 @@ export interface Dictionary<T> {
 
 export interface ResponseDef {
   type: string;
+  format?: string;
   enumDeclaration: string;
   usesGlobalType: boolean;
 }

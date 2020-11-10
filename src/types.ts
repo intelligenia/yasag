@@ -52,6 +52,7 @@ export interface Schema extends ParameterSchemaBase {
   readOnly?: boolean;
   required?: string[];
   type?: string;
+  format?: string;
   properties?: {
     [key: string]: Schema;
   };

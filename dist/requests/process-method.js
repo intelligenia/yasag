@@ -45,14 +45,18 @@ function processMethod(method, unwrapSingleParamMethods) {
             splitParamsMethod = getSplitParamsMethod(method, processedParams);
         }
     }
-    params = getRequestParams(paramTypes, method.methodName, method.responseDef.type);
+    params = getRequestParams(paramTypes, method.methodName, method.responseDef.type, method.responseDef);
     methodDef += '\n';
     methodDef += utils_1.makeComment([method.summary, method.description, method.swaggerUrl].filter(Boolean));
     let responseType = method.responseDef.type;
     if (responseType === 'string') {
         responseType = '';
     }
-    methodDef += `${method.simpleName}(${paramsSignature}): Observable<${method.responseDef.type}> {\n`;
+    let observableType = method.responseDef.type;
+    if (observableType === 'string' && method.responseDef.format === 'binary') {
+        observableType = 'Blob';
+    }
+    methodDef += `${method.simpleName}(${paramsSignature}): Observable<${observableType}> {\n`;
     // apply the param definitions, e.g. bodyParams
     methodDef += utils_1.indent(paramSeparation);
     if (paramSeparation.length)
@@ -183,7 +187,7 @@ function getParamSeparation(paramGroups) {
  * @param methodName name of http method to invoke
  * @param responseType type of the expected response
  */
-function getRequestParams(paramTypes, methodName, responseType) {
+function getRequestParams(paramTypes, methodName, responseType, responseObject) {
     let res = '';
     if (['post', 'put', 'patch'].includes(methodName)) {
         if (paramTypes.includes('body')) {
@@ -204,7 +208,12 @@ function getRequestParams(paramTypes, methodName, responseType) {
         if (optionParams.length > 0) {
             optionParams += ', ';
         }
-        optionParams += 'responseType: \'text\'';
+        if (responseObject.format && responseObject.format === 'binary') {
+            optionParams += 'responseType: \'blob\'';
+        }
+        else {
+            optionParams += 'responseType: \'text\'';
+        }
     }
     if (optionParams.length > 0) {
         res += `, {${optionParams}}`;
