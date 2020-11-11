@@ -277,8 +277,12 @@ function getValidators(param) {
 }
 function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodName, method) {
     let res = '';
-    if (methodName == 'get') {
-        res += utils_1.indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${method.responseDef.type}> {\n`);
+    if (methodName === 'get') {
+        let type = method.responseDef.type;
+        if (method.responseDef.format && method.responseDef.format === 'binary') {
+            type = 'Blob';
+        }
+        res += utils_1.indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${type}> {\n`);
     }
     else {
         res += utils_1.indent(`submit(value: any = false): Observable<${method.responseDef.type}> {\n`);
@@ -443,7 +447,11 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent('\n');
         res += utils_1.indent('\n');
     }
-    res += utils_1.indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
+    let type = method.responseDef.type;
+    if (method.responseDef.format && method.responseDef.format === 'binary') {
+        type = 'Blob';
+    }
+    res += utils_1.indent(`listen(value: any = false, submit: boolean = true): Observable<${type}> {\n`);
     res += utils_1.indent(`let cacheValue = value;\n`, 2);
     res += utils_1.indent(`if (cacheValue === false) {\n`, 2);
     res += utils_1.indent(`  cacheValue = 'ALL';\n`, 2);
