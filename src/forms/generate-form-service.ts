@@ -16,16 +16,16 @@ export interface FieldDefinition {
 }
 
 export function generateFormService(
-                      config: Config,
-                      name: string,
-                      params: Parameter[],
-                      definitions: ProcessedDefinition[],
-                      simpleName: string,
-                      formSubDirName: string,
-                      className: string,
-                      methodName: string,
-                      method: MethodOutput,
-                      readOnly: string) {
+  config: Config,
+  name: string,
+  params: Parameter[],
+  definitions: ProcessedDefinition[],
+  simpleName: string,
+  formSubDirName: string,
+  className: string,
+  methodName: string,
+  method: MethodOutput,
+  readOnly: string) {
   let content = '';
   const formName = 'form';
   const formArrayReset: string[] = [];
@@ -87,8 +87,8 @@ function getImports(name: string, constructor: string) {
 function getVariables(method: MethodOutput, formName: string): string {
   let content = '';
   Object.keys(method.method.method).forEach(k => {
-    if ( k.startsWith('x-') ) {
-      content += indent(`static ${ _.camelCase(k) } = ${ JSON.stringify(method.method.method[k]) };\n`);
+    if (k.startsWith('x-')) {
+      content += indent(`static ${_.camelCase(k)} = ${JSON.stringify(method.method.method[k])};\n`);
     }
   });
 
@@ -263,7 +263,7 @@ function makeField(param: Schema, ref: string,
           resetMethod += indent(`}\n`);
           resetMethod += indent(`if (${formValueIF}) {\n`);
           resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length);\n`, 2);
-          mySubArrayReset.forEach( subarray => {
+          mySubArrayReset.forEach(subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           resetMethod += indent(`}\n`);
@@ -274,7 +274,7 @@ function makeField(param: Schema, ref: string,
           patchMethod += indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
           patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
           patchMethod += indent(`}\n`, 2);
-          mySubArrayPatch.forEach( subarray => {
+          mySubArrayPatch.forEach(subarray => {
             patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           patchMethod += indent(`}\n`);
@@ -284,7 +284,7 @@ function makeField(param: Schema, ref: string,
           resetMethod += `(${parent}_object, ${parent}) => {\n`;
           resetMethod += indent(`if (${formValueIF}) {\n`);
           resetMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length);\n`, 2);
-          mySubArrayReset.forEach( subarray => {
+          mySubArrayReset.forEach(subarray => {
             resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           resetMethod += indent(`}\n`);
@@ -297,7 +297,7 @@ function makeField(param: Schema, ref: string,
           patchMethod += indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
           patchMethod += indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 3);
           patchMethod += indent(`}\n`, 2);
-          mySubArrayPatch.forEach( subarray => {
+          mySubArrayPatch.forEach(subarray => {
             patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
           });
           patchMethod += indent(`}\n`);
@@ -345,10 +345,14 @@ function getValidators(param: Parameter | Schema) {
 
 function getFormSubmitFunction(name: string, formName: string, simpleName: string, paramGroups: Parameter[], methodName: string, method: MethodOutput) {
   let res = '';
-  if (methodName == 'get') {
-    res += indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${ method.responseDef.type }> {\n`);
+  if (methodName === 'get') {
+    let type = method.responseDef.type;
+    if (method.responseDef.format && method.responseDef.format === 'binary') {
+      type = 'Blob';
+    }
+    res += indent(`submit(value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<${type}> {\n`);
   } else {
-    res += indent(`submit(value: any = false): Observable<${ method.responseDef.type }> {\n`);
+    res += indent(`submit(value: any = false): Observable<${method.responseDef.type}> {\n`);
     res += indent(`const cache = false;\n`, 2);
     res += indent(`const only_cache = false;\n`, 2);
   }
@@ -374,11 +378,11 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent(`const subject = this.cacheSub[cacheKey];\n`, 2);
 
   res += indent(`let cache_hit = false;\n`, 2);
-  if ( method.responseDef.type !== 'void' ) {
+  if (method.responseDef.type !== 'void') {
     res += indent(`if (cache && this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) {\n`, 2);
-    if ( method.responseDef.type.indexOf('[]') > 0 ) {
+    if (method.responseDef.type.indexOf('[]') > 0) {
       res += indent(`  subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]]);\n`, 2);
-    } else if ( method.responseDef.type === 'string' ) {
+    } else if (method.responseDef.type === 'string') {
       res += indent(`  subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]);\n`, 2);
     } else {
       res += indent(`  subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]});\n`, 2);
@@ -402,7 +406,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent('}\n');
   res += indent('\n');
 
-  res += indent(`try(subject: ReplaySubject<${ method.responseDef.type }>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
+  res += indent(`try(subject: ReplaySubject<${method.responseDef.type}>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {\n`);
   if (methodName === 'get') {
     // If it is GET, then it checks if the currentValue has changed. It is necessary when replay the "try" due to a 500 error
     res += indent(`if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {\n`, 2);
@@ -415,12 +419,12 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     `const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value, this.multipart', paramGroups)});\n`, 2);
 
   res += indent(`result.pipe(\n`, 2);
-  if ( method.responseDef.type === 'void' ) {
+  if (method.responseDef.type === 'void') {
     res += indent(`  map(() => {\n`, 2);
   } else {
     res += indent(`  map(val => {\n`, 2);
   }
-  if ( method.responseDef.type === 'void' ) {
+  if (method.responseDef.type === 'void') {
     res += indent(`    subject.next();\n`, 2);
     res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
     res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
@@ -429,7 +433,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
     res += indent(`    }\n`, 2);
   } else {
-    if ( method.responseDef.type === 'string' ) {
+    if (method.responseDef.type === 'string') {
       res += indent(`    if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
     } else {
       res += indent(`    if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
@@ -438,7 +442,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent(`        this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;\n`, 2);
     res += indent(`      }\n`, 2);
 
-    if ( method.responseDef.type.indexOf('[]') > 0 ) {
+    if (method.responseDef.type.indexOf('[]') > 0) {
       res += indent(`      subject.next([...val]);\n`, 2);
       res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
@@ -446,7 +450,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
       res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
       res += indent(`      }\n`, 2);
-    } else if ( method.responseDef.type === 'string' ) {
+    } else if (method.responseDef.type === 'string') {
       res += indent(`      subject.next(val);\n`, 2);
       res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
       res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
@@ -469,7 +473,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   res += indent(`    subject.complete();\n`, 2);
   res += indent(`    delete this.cacheSub[cacheKey];\n`, 2);
   res += indent(`    this.loadingSubject.next(false);\n`, 2);
-  if ( method.responseDef.type !== 'void' ) {
+  if (method.responseDef.type !== 'void') {
     res += indent(`    return val;\n`, 2);
   }
   res += indent(`  }),\n`, 2);
@@ -512,7 +516,11 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
     res += indent('\n');
   }
 
-  res += indent(`listen(value: any = false, submit: boolean = true): Observable<${method.responseDef.type}> {\n`);
+  let type = method.responseDef.type;
+  if (method.responseDef.format && method.responseDef.format === 'binary') {
+    type = 'Blob';
+  }
+  res += indent(`listen(value: any = false, submit: boolean = true): Observable<${type}> {\n`);
   res += indent(`let cacheValue = value;\n`, 2);
   res += indent(`if (cacheValue === false) {\n`, 2);
   res += indent(`  cacheValue = 'ALL';\n`, 2);
