@@ -349,7 +349,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
         res += utils_1.indent(`}\n`, 2);
     }
     res += utils_1.indent(`const result = this.${_.lowerFirst(name)}Service.${simpleName}(${getSubmitFnParameters('value, this.multipart', paramGroups)});\n`, 2);
-    res += utils_1.indent(`result.pipe(\n`, 2);
+    res += utils_1.indent(`this.cacheSub['native_' + cacheKey] = result.pipe(\n`, 2);
     if (method.responseDef.type === 'void') {
         res += utils_1.indent(`  map(() => {\n`, 2);
     }
