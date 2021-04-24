@@ -69,7 +69,7 @@ function getImports(name: string, constructor: string) {
   if (constructor.match(/new FormGroup\(/)) imports.push('FormGroup');
   if (constructor.match(/\[Validators\./)) imports.push('Validators');
 
-  let res = 'import { Injectable } from \'@angular/core\';\n';
+  let res = 'import { Injectable, NgZone } from \'@angular/core\';\n';
   if (imports.length) res += `import {${imports.join(', ')}} from '@angular/forms';\n`;
   res += 'import { ReplaySubject, Observable, throwError } from \'rxjs\';\n';
   res += 'import { catchError, finalize, map } from \'rxjs/operators\';\n';
@@ -116,6 +116,7 @@ function getConstructor(name: string, formName: string, definitions: ProcessedDe
   let res = indent('constructor(\n');
   res += indent(`private ${_.lowerFirst(name)}Service: ${name}Service,\n`, 2);
   res += indent(`private apiConfigService: APIConfigService,\n`, 2);
+  res += indent(`private ngZone: NgZone,\n`, 2);
   res += indent(') {\n');
 
   const definitionsMap = _.groupBy(definitions, 'name');
@@ -425,75 +426,80 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   } else {
     res += indent(`  map(val => {\n`, 2);
   }
+  res += indent(`    this.ngZone.run(() => {\n`, 2);
   if (method.responseDef.type === 'void') {
-    res += indent(`    subject.next();\n`, 2);
-    res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-    res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
-    res += indent(`    }\n`, 2);
-    res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-    res += indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
-    res += indent(`    }\n`, 2);
+    res += indent(`      subject.next();\n`, 2);
+    res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+    res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
+    res += indent(`      }\n`, 2);
+    res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+    res += indent(`       this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
+    res += indent(`      }\n`, 2);
   } else {
     if (method.responseDef.type === 'string') {
-      res += indent(`    if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
+      res += indent(`      if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
     } else {
-      res += indent(`    if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
+      res += indent(`      if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
     }
-    res += indent(`      this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;\n`, 2);
-    res += indent(`      this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;\n`, 2);
+    res += indent(`        this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;\n`, 2);
+    res += indent(`        this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;\n`, 2);
 
     if (method.responseDef.type.indexOf('[]') > 0) {
-      res += indent(`      subject.next([...val]);\n`, 2);
+      res += indent(`        subject.next([...val]);\n`, 2);
     } else if (method.responseDef.type === 'string') {
-      res += indent(`      subject.next(val);\n`, 2);
+      res += indent(`        subject.next(val);\n`, 2);
     } else {
-      res += indent(`      subject.next({...val});\n`, 2);
+      res += indent(`        subject.next({...val});\n`, 2);
     }
-    res += indent(`    }\n`, 2);
+    res += indent(`      }\n`, 2);
 
     if (method.responseDef.type.indexOf('[]') > 0) {
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
-      res += indent(`    }\n`, 2);
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
-      res += indent(`    }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
+      res += indent(`      }\n`, 2);
     } else if (method.responseDef.type === 'string') {
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
-      res += indent(`    }\n`, 2);
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
-      res += indent(`    }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
+      res += indent(`      }\n`, 2);
     } else {
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
-      res += indent(`    }\n`, 2);
-      res += indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-      res += indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
-      res += indent(`    }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
+      res += indent(`      }\n`, 2);
+      res += indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+      res += indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
+      res += indent(`      }\n`, 2);
     }
   }
 
-  res += indent(`    subject.complete();\n`, 2);
-  res += indent(`    delete this.cacheSub[cacheKey];\n`, 2);
-  res += indent(`    this.loadingSubject.next(false);\n`, 2);
+  res += indent(`      subject.complete();\n`, 2);
+  res += indent(`      delete this.cacheSub[cacheKey];\n`, 2);
+  res += indent(`      this.loadingSubject.next(false);\n`, 2);
+  res += indent(`    });\n`, 2);
   if (method.responseDef.type !== 'void') {
     res += indent(`    return val;\n`, 2);
   }
+
   res += indent(`  }),\n`, 2);
   res += indent(`  catchError(error => {\n`, 2);
   res += indent(`    if (error.status >= 500 && maxRetries > 0) {\n`, 2);
-  res += indent(`        // A client-side or network error occurred. Handle it accordingly.\n`, 2);
-  res += indent(`        setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
+  res += indent(`      // A client-side or network error occurred. Handle it accordingly.\n`, 2);
+  res += indent(`      setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
   res += indent(`    } else {\n`, 2);
-  res += indent(`        // The backend returned an unsuccessful response code.\n`, 2);
-  res += indent(`        // The response body may contain clues as to what went wrong,\n`, 2);
+  res += indent(`      // The backend returned an unsuccessful response code.\n`, 2);
+  res += indent(`      // The response body may contain clues as to what went wrong,\n`, 2);
+  res += indent(`      this.ngZone.run(() => {\n`, 2);
   res += indent(`        this.serverErrorsSubject.next(error.error);\n`, 2);
   res += indent(`        subject.error(error);\n`, 2);
   res += indent(`        subject.complete();\n`, 2);
   res += indent(`        delete this.cacheSub[cacheKey];\n`, 2);
   res += indent(`        this.loadingSubject.next(false);\n`, 2);
+  res += indent(`      });\n`, 2);
   res += indent(`    }\n`, 2);
   res += indent(`    return throwError(error);\n`, 2);
   res += indent(`  })\n`, 2);

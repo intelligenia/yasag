@@ -10,7 +10,7 @@
  * petstore.swagger.io/v2
  */
 
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import { ReplaySubject, Observable, throwError } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
@@ -37,6 +37,7 @@ export class PetFindByStatusFormService {
   constructor(
     private petService: PetService,
     private apiConfigService: APIConfigService,
+    private ngZone: NgZone,
   ) {
     this.form = new FormGroup({
       status: new FormControl([], [Validators.required]),
@@ -84,37 +85,40 @@ export class PetFindByStatusFormService {
       return;
     }
     const result = this.petService.findByStatus(value, this.multipart);
-    result.pipe(
+    this.cacheSub['native_' + cacheKey] = result.pipe(
       map(val => {
-        if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {
-          if (cache) {
-            this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] = val;
+        this.ngZone.run(() => {
+          if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {
+            this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;
+            this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;
+            subject.next([...val]);
           }
-          subject.next([...val]);
           if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
             this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);
           }
           if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {
             this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);
           }
-        }
-        subject.complete();
-        delete this.cacheSub[cacheKey];
-        this.loadingSubject.next(false);
+          subject.complete();
+          delete this.cacheSub[cacheKey];
+          this.loadingSubject.next(false);
+        });
         return val;
       }),
       catchError(error => {
         if (error.status >= 500 && maxRetries > 0) {
-            // A client-side or network error occurred. Handle it accordingly.
-            setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);
+          // A client-side or network error occurred. Handle it accordingly.
+          setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);
         } else {
-            // The backend returned an unsuccessful response code.
-            // The response body may contain clues as to what went wrong,
+          // The backend returned an unsuccessful response code.
+          // The response body may contain clues as to what went wrong,
+          this.ngZone.run(() => {
             this.serverErrorsSubject.next(error.error);
             subject.error(error);
             subject.complete();
             delete this.cacheSub[cacheKey];
             this.loadingSubject.next(false);
+          });
         }
         return throwError(error);
       })

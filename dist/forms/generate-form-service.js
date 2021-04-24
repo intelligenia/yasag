@@ -42,7 +42,7 @@ function getImports(name, constructor) {
         imports.push('FormGroup');
     if (constructor.match(/\[Validators\./))
         imports.push('Validators');
-    let res = 'import { Injectable } from \'@angular/core\';\n';
+    let res = 'import { Injectable, NgZone } from \'@angular/core\';\n';
     if (imports.length)
         res += `import {${imports.join(', ')}} from '@angular/forms';\n`;
     res += 'import { ReplaySubject, Observable, throwError } from \'rxjs\';\n';
@@ -83,6 +83,7 @@ function getConstructor(name, formName, definitions, params, formArrayReset, for
     let res = utils_1.indent('constructor(\n');
     res += utils_1.indent(`private ${_.lowerFirst(name)}Service: ${name}Service,\n`, 2);
     res += utils_1.indent(`private apiConfigService: APIConfigService,\n`, 2);
+    res += utils_1.indent(`private ngZone: NgZone,\n`, 2);
     res += utils_1.indent(') {\n');
     const definitionsMap = _.groupBy(definitions, 'name');
     const parentTypes = [];
@@ -356,78 +357,82 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     else {
         res += utils_1.indent(`  map(val => {\n`, 2);
     }
+    res += utils_1.indent(`    this.ngZone.run(() => {\n`, 2);
     if (method.responseDef.type === 'void') {
-        res += utils_1.indent(`    subject.next();\n`, 2);
-        res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-        res += utils_1.indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
-        res += utils_1.indent(`    }\n`, 2);
-        res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-        res += utils_1.indent(`     this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
-        res += utils_1.indent(`    }\n`, 2);
+        res += utils_1.indent(`      subject.next();\n`, 2);
+        res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+        res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();\n`, 2);
+        res += utils_1.indent(`      }\n`, 2);
+        res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+        res += utils_1.indent(`       this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next();\n`, 2);
+        res += utils_1.indent(`      }\n`, 2);
     }
     else {
         if (method.responseDef.type === 'string') {
-            res += utils_1.indent(`    if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
+            res += utils_1.indent(`      if (!cache_hit || this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache] !== val) {\n`, 2);
         }
         else {
-            res += utils_1.indent(`    if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
+            res += utils_1.indent(`      if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {\n`, 2);
         }
-        res += utils_1.indent(`      this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;\n`, 2);
-        res += utils_1.indent(`      this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;\n`, 2);
+        res += utils_1.indent(`        this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;\n`, 2);
+        res += utils_1.indent(`        this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
-            res += utils_1.indent(`      subject.next([...val]);\n`, 2);
+            res += utils_1.indent(`        subject.next([...val]);\n`, 2);
         }
         else if (method.responseDef.type === 'string') {
-            res += utils_1.indent(`      subject.next(val);\n`, 2);
+            res += utils_1.indent(`        subject.next(val);\n`, 2);
         }
         else {
-            res += utils_1.indent(`      subject.next({...val});\n`, 2);
+            res += utils_1.indent(`        subject.next({...val});\n`, 2);
         }
-        res += utils_1.indent(`    }\n`, 2);
+        res += utils_1.indent(`      }\n`, 2);
         if (method.responseDef.type.indexOf('[]') > 0) {
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next([...val]);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next([...val]);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
         }
         else if (method.responseDef.type === 'string') {
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next(val);\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
         }
         else {
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
-            res += utils_1.indent(`    if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
-            res += utils_1.indent(`      this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
-            res += utils_1.indent(`    }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next({...val});\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
+            res += utils_1.indent(`      if (this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')]) {\n`, 2);
+            res += utils_1.indent(`        this.apiConfigService.listeners[this.cache + JSON.stringify('ALL')].subject.next({...val});\n`, 2);
+            res += utils_1.indent(`      }\n`, 2);
         }
     }
-    res += utils_1.indent(`    subject.complete();\n`, 2);
-    res += utils_1.indent(`    delete this.cacheSub[cacheKey];\n`, 2);
-    res += utils_1.indent(`    this.loadingSubject.next(false);\n`, 2);
+    res += utils_1.indent(`      subject.complete();\n`, 2);
+    res += utils_1.indent(`      delete this.cacheSub[cacheKey];\n`, 2);
+    res += utils_1.indent(`      this.loadingSubject.next(false);\n`, 2);
+    res += utils_1.indent(`    });\n`, 2);
     if (method.responseDef.type !== 'void') {
         res += utils_1.indent(`    return val;\n`, 2);
     }
     res += utils_1.indent(`  }),\n`, 2);
     res += utils_1.indent(`  catchError(error => {\n`, 2);
     res += utils_1.indent(`    if (error.status >= 500 && maxRetries > 0) {\n`, 2);
-    res += utils_1.indent(`        // A client-side or network error occurred. Handle it accordingly.\n`, 2);
-    res += utils_1.indent(`        setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
+    res += utils_1.indent(`      // A client-side or network error occurred. Handle it accordingly.\n`, 2);
+    res += utils_1.indent(`      setTimeout(() => this.try(subject, value, cache_hit, cache, cacheKey, waitOnRetry + 1000, maxRetries - 1), waitOnRetry);\n`, 2);
     res += utils_1.indent(`    } else {\n`, 2);
-    res += utils_1.indent(`        // The backend returned an unsuccessful response code.\n`, 2);
-    res += utils_1.indent(`        // The response body may contain clues as to what went wrong,\n`, 2);
+    res += utils_1.indent(`      // The backend returned an unsuccessful response code.\n`, 2);
+    res += utils_1.indent(`      // The response body may contain clues as to what went wrong,\n`, 2);
+    res += utils_1.indent(`      this.ngZone.run(() => {\n`, 2);
     res += utils_1.indent(`        this.serverErrorsSubject.next(error.error);\n`, 2);
     res += utils_1.indent(`        subject.error(error);\n`, 2);
     res += utils_1.indent(`        subject.complete();\n`, 2);
     res += utils_1.indent(`        delete this.cacheSub[cacheKey];\n`, 2);
     res += utils_1.indent(`        this.loadingSubject.next(false);\n`, 2);
+    res += utils_1.indent(`      });\n`, 2);
     res += utils_1.indent(`    }\n`, 2);
     res += utils_1.indent(`    return throwError(error);\n`, 2);
     res += utils_1.indent(`  })\n`, 2);
