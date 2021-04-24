@@ -2,7 +2,7 @@
 
 Generate minimalistic TypeScript API layer for Angular with full type reflection of backend model.
 - Source: [swagger scheme OpenAPI 2.0](https://swagger.io/specification/)
-- Destination: [Angular-cli](https://cli.angular.io/) based [Angular 7](https://angular.io/) app.
+- Destination: [Angular-cli](https://cli.angular.io/) based [Angular 7, 8, 9, 10, 11](https://angular.io/) app.
 
 ## What is generated
 
