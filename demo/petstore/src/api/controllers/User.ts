@@ -66,7 +66,6 @@ export class UserService {
   /**
    * Create user
    * This can only be done by the logged in user.
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUser
    */
   createUser(params: CreateUserParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
@@ -83,10 +82,7 @@ export class UserService {
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
-  /**
-   * Creates list of users with given input array
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithArrayInput
-   */
+  /** Creates list of users with given input array */
   createWithArray(params: CreateWithArrayParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
@@ -102,10 +98,7 @@ export class UserService {
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithArray`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
-  /**
-   * Creates list of users with given input array
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/createUsersWithListInput
-   */
+  /** Creates list of users with given input array */
   createWithList(params: CreateWithListParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
@@ -121,10 +114,7 @@ export class UserService {
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/user/createWithList`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
-  /**
-   * Logs user into the system
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/loginUser
-   */
+  /** Logs user into the system */
   login(params: LoginParams, multipart = false): Observable<string> {
     const queryParamBase = {
       username: params.username,
@@ -152,18 +142,12 @@ export class UserService {
     return this.http.get(this.apiConfigService.options.apiUrl + `/v2/user/login`, {params: queryParams, responseType: 'text'});
   }
 
-  /**
-   * Logs out current logged in user session
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/logoutUser
-   */
+  /** Logs out current logged in user session */
   logout(multipart = false): Observable<string> {
     return this.http.get(this.apiConfigService.options.apiUrl + `/v2/user/logout`, {responseType: 'text'});
   }
 
-  /**
-   * Get user by user name
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/getUserByName
-   */
+  /** Get user by user name */
   getUserByName(params: GetUserByNameParams, multipart = false): Observable<__model.User> {
     const pathParams = {
       username: params.username,
@@ -174,7 +158,6 @@ export class UserService {
   /**
    * Updated user
    * This can only be done by the logged in user.
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/updateUser
    */
   updateUser(params: UpdateUserParams, multipart = false): Observable<string> {
     const pathParams = {
@@ -197,7 +180,6 @@ export class UserService {
   /**
    * Delete user
    * This can only be done by the logged in user.
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/user/deleteUser
    */
   deleteUser(params: DeleteUserParams, multipart = false): Observable<string> {
     const pathParams = {

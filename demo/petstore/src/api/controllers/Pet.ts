@@ -89,10 +89,7 @@ export class PetService {
     private apiConfigService: APIConfigService) {}
 
 
-  /**
-   * Add a new pet to the store
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/addPet
-   */
+  /** Add a new pet to the store */
   addPet(params: AddPetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
@@ -108,10 +105,7 @@ export class PetService {
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
-  /**
-   * Update an existing pet
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePet
-   */
+  /** Update an existing pet */
   updatePet(params: UpdatePetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
@@ -130,7 +124,6 @@ export class PetService {
   /**
    * Finds Pets by status
    * Multiple status values can be provided with comma separated strings
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/findPetsByStatus
    */
   findByStatus(params: FindByStatusParams, multipart = false): Observable<__model.Pet[]> {
     const queryParamBase = {
@@ -161,7 +154,6 @@ export class PetService {
   /**
    * Finds Pets by tags
    * Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/findPetsByTags
    */
   findByTags(params: FindByTagsParams, multipart = false): Observable<__model.Pet[]> {
     const queryParamBase = {
@@ -192,7 +184,6 @@ export class PetService {
   /**
    * Find pet by ID
    * Returns a single pet
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/getPetById
    */
   getPetById(params: GetPetByIdParams, multipart = false): Observable<__model.Pet> {
     const pathParams = {
@@ -201,10 +192,7 @@ export class PetService {
     return this.http.get<__model.Pet>(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`);
   }
 
-  /**
-   * Updates a pet in the store with form data
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/updatePetWithForm
-   */
+  /** Updates a pet in the store with form data */
   updatePetWithForm(params: UpdatePetWithFormParams, multipart = false): Observable<string> {
     const pathParams = {
       petId: params.petId,
@@ -216,10 +204,7 @@ export class PetService {
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, formDataParams, {responseType: 'text'});
   }
 
-  /**
-   * Deletes a pet
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/deletePet
-   */
+  /** Deletes a pet */
   deletePet(params: DeletePetParams, multipart = false): Observable<string> {
     const pathParams = {
       petId: params.petId,
@@ -227,10 +212,7 @@ export class PetService {
     return this.http.delete(this.apiConfigService.options.apiUrl + `/v2/pet/${pathParams.petId}`, {responseType: 'text'});
   }
 
-  /**
-   * uploads an image
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/pet/uploadFile
-   */
+  /** uploads an image */
   uploadImage(params: UploadImageParams, multipart = false): Observable<__model.ApiResponse> {
     const pathParams = {
       petId: params.petId,

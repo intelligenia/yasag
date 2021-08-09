@@ -360,7 +360,7 @@ function getFormSubmitFunction(name: string, formName: string, simpleName: strin
   }
   res += indent(`if (value === false) {\n`, 2);
   res += indent(`  value = this.${formName}.value;\n`, 2);
-  if (methodName === 'patch') {
+  if (methodName === 'patch' && method.paramGroups.body) {
     // If it a PATCH, it deletes the unchanged properties
     res += indent(`  value = {...value};\n`, 2);
     res += indent(`  const newBody = {};\n`, 2);

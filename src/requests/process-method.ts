@@ -53,7 +53,7 @@ export function processMethod(method: ControllerMethod, unwrapSingleParamMethods
   params = getRequestParams(paramTypes, method.methodName, method.responseDef.type, method.responseDef);
 
   methodDef += '\n';
-  methodDef += makeComment([method.summary, method.description, method.swaggerUrl].filter(Boolean));
+  methodDef += makeComment([method.summary, method.description].filter(Boolean));
   let responseType = method.responseDef.type;
   if (responseType === 'string') {
     responseType = '';

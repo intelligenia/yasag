@@ -292,7 +292,7 @@ function getFormSubmitFunction(name, formName, simpleName, paramGroups, methodNa
     }
     res += utils_1.indent(`if (value === false) {\n`, 2);
     res += utils_1.indent(`  value = this.${formName}.value;\n`, 2);
-    if (methodName === 'patch') {
+    if (methodName === 'patch' && method.paramGroups.body) {
         // If it a PATCH, it deletes the unchanged properties
         res += utils_1.indent(`  value = {...value};\n`, 2);
         res += utils_1.indent(`  const newBody = {};\n`, 2);

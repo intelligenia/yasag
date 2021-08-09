@@ -48,16 +48,12 @@ export class StoreService {
   /**
    * Returns pet inventories by status
    * Returns a map of status codes to quantities
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/getInventory
    */
   inventory(multipart = false): Observable<{[key: string]: number}> {
     return this.http.get<{[key: string]: number}>(this.apiConfigService.options.apiUrl + `/v2/store/inventory`);
   }
 
-  /**
-   * Place an order for a pet
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/placeOrder
-   */
+  /** Place an order for a pet */
   placeOrder(params: PlaceOrderParams, multipart = false): Observable<__model.Order> {
     const bodyParams = params.body;
     const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
@@ -76,7 +72,6 @@ export class StoreService {
   /**
    * Find purchase order by ID
    * For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/getOrderById
    */
   getOrderById(params: GetOrderByIdParams, multipart = false): Observable<__model.Order> {
     const pathParams = {
@@ -88,7 +83,6 @@ export class StoreService {
   /**
    * Delete purchase order by ID
    * For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
-   * http://petstore.swagger.io/swagger/swagger-ui.html#!/store/deleteOrder
    */
   deleteOrder(params: DeleteOrderParams, multipart = false): Observable<string> {
     const pathParams = {
