@@ -184,6 +184,9 @@ export class UserCreateWithArrayFormService {
   }
   patch(value: any): void {
     if (value && value['body']) {
+      while (value['body'].length < this.form.value['body'].length) {
+        this.removeBody(0);
+      }
       if (value['body'].length > this.form.value['body'].length) {
         this.addBody(value['body'].length - this.form.value['body'].length);
       }

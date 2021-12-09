@@ -188,6 +188,9 @@ export class PetAddPetFormService {
   }
   patch(value: any): void {
     if (value && value['body'] && value['body']['tags']) {
+      while (value['body']['tags'].length < this.form.value['body']['tags'].length) {
+        this.removeBodyTags(0);
+      }
       if (value['body']['tags'].length > this.form.value['body']['tags'].length) {
         this.addBodyTags(value['body']['tags'].length - this.form.value['body']['tags'].length);
       }
