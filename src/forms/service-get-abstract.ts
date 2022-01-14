@@ -188,7 +188,7 @@ export function createServiceGetAbstractClass(config: Config) {
       return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();
     }
 
-    reset(value?: any, isPatch: boolean): void {
+    reset(value?: any, isPatch = false): void {
       this.form.reset();
       this.serverErrorsSubject.next(null);
       this.loadingSubject.next(false);
