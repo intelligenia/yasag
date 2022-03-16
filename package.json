@@ -1,6 +1,6 @@
 {
   "name": "yasag",
-  "version": "2.3.19",
+  "version": "2.3.20",
   "description": "Yet Another Swagger Angular Generator",
   "main": "dist/generate.js",
   "types": "dist/generate.d.ts",

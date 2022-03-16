@@ -207,7 +207,7 @@ function makeField(param, ref, name, path, required, definitions, parentTypes, f
                     formArrayReset.push(resetMethod);
                     let patchMethod = '';
                     patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
-                    patchMethod += utils_1.indent(`while (${formValue}.length < this.form.${formValue}.length) {\n`, 2);
+                    patchMethod += utils_1.indent(`while (this.form.${formValue}.length > 0) {\n`, 2);
                     patchMethod += utils_1.indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(0);\n`, 3);
                     patchMethod += utils_1.indent(`}\n`, 2);
                     patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);

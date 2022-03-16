@@ -272,7 +272,7 @@ function makeField(param: Schema, ref: string,
 
           let patchMethod = '';
           patchMethod += indent(`if (${formValueIF}) {\n`);
-          patchMethod += indent(`while (${formValue}.length < this.form.${formValue}.length) {\n`, 2);
+          patchMethod += indent(`while (this.form.${formValue}.length > 0) {\n`, 2);
           patchMethod += indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace('_', '-')))}(0);\n`, 3);
           patchMethod += indent(`}\n`, 2);
           patchMethod += indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
