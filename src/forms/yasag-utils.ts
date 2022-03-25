@@ -11,6 +11,7 @@ export function createUtils(config: Config) {
 
   import { HttpParams } from "@angular/common/http";
   import { FormArray, FormGroup } from "@angular/forms";
+  import cloneDeep from 'lodash/cloneDeep';
 
   export function getQueryParams(queryParamBase): HttpParams {
 
@@ -51,7 +52,7 @@ export function createUtils(config: Config) {
 
   export function addField(control:FormArray, items: number, formGroup: FormGroup, position: number, value: any) {
     for (let i = 0; i < items; i++) {
-      const fg = JSON.parse(JSON.stringify(formGroup));
+      const fg = cloneDeep(formGroup);
 
       if (value !== undefined) {
         fg.patchValue(value);
