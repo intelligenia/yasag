@@ -1,14 +1,16 @@
-import * as path from "path";
-import * as conf from "../conf";
-import { Config } from "../generate";
-import { writeFile } from "../utils";
-
+/* tslint:disable:max-line-length */
 /**
- * Creates the FormService Abstract class
- * @param config: global configuration for YASAG
+ * This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.
+ * 1.0.0
+ * Swagger Petstore
+ * http://swagger.io/terms/
+ * apiteam@swagger.io
+ * Apache 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0.html
+ * petstore.swagger.io/v2
  */
-export function createServicePostAbstractClass(config: Config) {
-  const content = `
+
+
   import { FormGroup } from '@angular/forms';
   import { NgZone } from '@angular/core';
   import { ReplaySubject, Observable, throwError } from 'rxjs';
@@ -195,12 +197,4 @@ export function createServicePostAbstractClass(config: Config) {
       this.form.patchValue(value);
     }
 
-  }`;
-
-  const classFileName = path.join(
-    config.dest,
-    conf.storeDir,
-    `yasag-post.service.ts`
-  );
-  writeFile(classFileName, content, config.header);
-}
+  }

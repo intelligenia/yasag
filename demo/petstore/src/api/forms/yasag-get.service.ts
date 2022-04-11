@@ -1,14 +1,16 @@
-import * as path from "path";
-import * as conf from "../conf";
-import { Config } from "../generate";
-import { writeFile } from "../utils";
-
+/* tslint:disable:max-line-length */
 /**
- * Creates the FormService Abstract class
- * @param config: global configuration for YASAG
+ * This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.
+ * 1.0.0
+ * Swagger Petstore
+ * http://swagger.io/terms/
+ * apiteam@swagger.io
+ * Apache 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0.html
+ * petstore.swagger.io/v2
  */
-export function createServicePostAbstractClass(config: Config) {
-  const content = `
+
+
   import { FormGroup } from '@angular/forms';
   import { NgZone } from '@angular/core';
   import { ReplaySubject, Observable, throwError } from 'rxjs';
@@ -16,7 +18,7 @@ export function createServicePostAbstractClass(config: Config) {
   import { environment } from 'environments/environment';
   import { APIConfigService } from '../apiconfig.service';
 
-  export abstract class YASAGPostFormService<Type> {
+  export abstract class YASAGGetFormService<Type> {
     defaultValue: any;
     serverErrors$: Observable<any>;
     loading$: Observable<boolean>;
@@ -44,30 +46,14 @@ export function createServicePostAbstractClass(config: Config) {
       this.defaultValue = this.form.value;
     }
 
-    protected _submit(type: string,  result: Observable<Type>, paramName:string, value: any = false, isPatch: boolean): Observable<Type> {
-      const cache = false;
-      const only_cache = false;
-      // Deep copy of value
-      value = JSON.parse(JSON.stringify(value));
+    protected _submit(type: string,  result: Observable<Type>, value: any = false, cache: boolean = true, only_cache: boolean = false): Observable<Type> {
 
-      // If it is a PATCH, it deletes the unchanged properties
-      if (value === false) {
-        value = this.form.value;
-        if (isPatch) {
-          const newBody = {};
-          Object.keys(this.patchInitialValue[paramName]).forEach(key => {
-            if (JSON.stringify(value[paramName][key]) !== JSON.stringify(this.patchInitialValue[paramName][key])) {
-              newBody[key] = value[paramName][key];
-            }
-          });
-          value[paramName] = newBody;
-        }
-      }
-
+      value = value || this.form.value;
 
       const cacheKey = JSON.stringify(value) + cache + new Date().getTime();
+
       if ( this.cacheSub[cacheKey] ) {
-        return this.cacheSub[cacheKey].asObservable();
+          return this.cacheSub[cacheKey].asObservable();
       }
       this.cacheSub[cacheKey] = new ReplaySubject<Type>(1);
       const subject = this.cacheSub[cacheKey];
@@ -75,7 +61,7 @@ export function createServicePostAbstractClass(config: Config) {
 
       if (type !== "void") {
         if (cache && this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) {
-          //Deep copy of cache
+           //Deep copy of cache
           let c = JSON.parse(JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]));
           subject.next(c);
 
@@ -88,18 +74,23 @@ export function createServicePostAbstractClass(config: Config) {
           }
         }
       }
-
       this.loadingSubject.next(true);
       this.serverErrorsSubject.next(null);
+      this.currentValue = value;
       this._try(type, result, subject, value, cache_hit, cache, cacheKey);
       return subject.asObservable();
     }
 
     private _try(type:string, result: Observable<Type>, subject: ReplaySubject<Type>, value: any, cache_hit: boolean, cache: boolean, cacheKey: string, waitOnRetry = 1000, maxRetries = environment.apiRetries): void {
+      // Deep copy of value
+
+      if (JSON.stringify(value) !== JSON.stringify(this.currentValue)) {
+        subject.complete();
+        delete this.cacheSub[cacheKey];
+        return;
+      }
 
       let cacheFunction;
-
-
       if (type === "void") {
         cacheFunction = () => {
           this.ngZone.run(() => {
@@ -117,14 +108,15 @@ export function createServicePostAbstractClass(config: Config) {
         };
       }else {
         cacheFunction = val => {
+
           this.ngZone.run(() => {
             val = JSON.parse(JSON.stringify(val));
+
             if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {
               this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;
               this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;
               subject.next(val);
             }
-
             if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
               this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next(val);
             }
@@ -140,6 +132,7 @@ export function createServicePostAbstractClass(config: Config) {
       }
 
       this.cacheSub['native_' + cacheKey] = result.pipe(
+
         map(cacheFunction),
         catchError(error => {
           if (error.status >= 500 && maxRetries > 0) {
@@ -165,14 +158,31 @@ export function createServicePostAbstractClass(config: Config) {
       Object.keys(this.cacheSub).forEach(key => this.cacheSub[key].unsubscribe());
       this.cacheSub = {};
     }
+    cleanCache(value: any = false): void {
+      if (value === false) {
+        value = this.form.value;
+      }
+      if (this.apiConfigService.cache[this.cache + JSON.stringify(value) + true]) {
+        delete this.apiConfigService.cache[this.cache + JSON.stringify(value) + true];
+      }
+    }
 
-    protected _listen( value: any = false, submit: boolean = true): Observable<Type> {
+    protected _listen(type:string, value: any = false, submit: boolean = true): Observable<Type> {
       let cacheValue = value;
       if (cacheValue === false) {
         cacheValue = 'ALL';
       }
       if (!this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)]) {
         this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)] = {fs: this, payload: cacheValue, subject: new ReplaySubject<Type>(1)};
+      }
+      if (this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]) {
+        if (type.indexOf("[]") > 0) {
+          this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next([...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]]);
+        } else if (type === "string") {
+           this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next(this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]);
+        } else {
+          this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.next({...this.apiConfigService.cache[this.cache + JSON.stringify(cacheValue) + true]});
+        }
       }
 
       return this.apiConfigService.listeners[this.cache + JSON.stringify(cacheValue)].subject.asObservable();
@@ -195,12 +205,4 @@ export function createServicePostAbstractClass(config: Config) {
       this.form.patchValue(value);
     }
 
-  }`;
-
-  const classFileName = path.join(
-    config.dest,
-    conf.storeDir,
-    `yasag-post.service.ts`
-  );
-  writeFile(classFileName, content, config.header);
-}
+  }

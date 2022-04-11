@@ -15,6 +15,8 @@ import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import { APIConfigService } from '../apiconfig.service';
 
+import * as __utils from '../yasag-utils';
+
 import * as __model from '../model';
 
 export interface PlaceOrderParams {
@@ -56,16 +58,8 @@ export class StoreService {
   /** Place an order for a pet */
   placeOrder(params: PlaceOrderParams, multipart = false): Observable<__model.Order> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
-    Object.entries(bodyParams || {}).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (multipart) {
-          bodyParamsWithoutUndefined.append(key, value);
-        } else {
-          bodyParamsWithoutUndefined[key] = value;
-        }
-      }
-    });
+    const bodyParamsWithoutUndefined = __utils.getBodyParamsWithoutUndefined(multipart, bodyParams);
+
     return this.http.post<__model.Order>(this.apiConfigService.options.apiUrl + `/v2/store/order`, bodyParamsWithoutUndefined);
   }
 
