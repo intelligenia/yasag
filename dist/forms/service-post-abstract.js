@@ -15,8 +15,6 @@ function createServicePostAbstractClass(config) {
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
   import { APIConfigService } from '../apiconfig.service';
-  import * as moment from 'moment';
-
 
   export abstract class YASAGPostFormService<Type> {
     defaultValue: any;
@@ -67,7 +65,7 @@ function createServicePostAbstractClass(config) {
       }
 
 
-      const cacheKey = JSON.stringify(value) + cache + moment().format('HHMMss');
+      const cacheKey = JSON.stringify(value) + cache + new Date().getTime();
       if ( this.cacheSub[cacheKey] ) {
         return this.cacheSub[cacheKey].asObservable();
       }

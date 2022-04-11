@@ -15,6 +15,8 @@ import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import { APIConfigService } from '../apiconfig.service';
 
+import * as __utils from '../yasag-utils';
+
 import * as __model from '../model';
 
 export interface AddPetParams {
@@ -92,32 +94,16 @@ export class PetService {
   /** Add a new pet to the store */
   addPet(params: AddPetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
-    Object.entries(bodyParams || {}).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (multipart) {
-          bodyParamsWithoutUndefined.append(key, value);
-        } else {
-          bodyParamsWithoutUndefined[key] = value;
-        }
-      }
-    });
+    const bodyParamsWithoutUndefined = __utils.getBodyParamsWithoutUndefined(multipart, bodyParams);
+
     return this.http.post(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
   /** Update an existing pet */
   updatePet(params: UpdatePetParams, multipart = false): Observable<string> {
     const bodyParams = params.body;
-    const bodyParamsWithoutUndefined: any = (multipart) ? new FormData() : Array.isArray(bodyParams) ? [] : {};
-    Object.entries(bodyParams || {}).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (multipart) {
-          bodyParamsWithoutUndefined.append(key, value);
-        } else {
-          bodyParamsWithoutUndefined[key] = value;
-        }
-      }
-    });
+    const bodyParamsWithoutUndefined = __utils.getBodyParamsWithoutUndefined(multipart, bodyParams);
+
     return this.http.put(this.apiConfigService.options.apiUrl + `/v2/pet`, bodyParamsWithoutUndefined, {responseType: 'text'});
   }
 
@@ -130,23 +116,7 @@ export class PetService {
       status: params.status,
     };
 
-    let queryParams = new HttpParams();
-    Object.entries(queryParamBase).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          let val = '';
-          value.forEach(v => val += v + ',');
-          if (val.length > 0 ) {
-            val = val.slice(0, val.length - 1);
-          }
-          queryParams = queryParams.set(key, val);
-        } else if (typeof value === 'string') {
-          queryParams = queryParams.set(key, value);
-        } else {
-          queryParams = queryParams.set(key, JSON.stringify(value));
-        }
-      }
-    });
+    let queryParams = __utils.getQueryParams(queryParamBase);
 
     return this.http.get<__model.Pet[]>(this.apiConfigService.options.apiUrl + `/v2/pet/findByStatus`, {params: queryParams});
   }
@@ -160,23 +130,7 @@ export class PetService {
       tags: params.tags,
     };
 
-    let queryParams = new HttpParams();
-    Object.entries(queryParamBase).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          let val = '';
-          value.forEach(v => val += v + ',');
-          if (val.length > 0 ) {
-            val = val.slice(0, val.length - 1);
-          }
-          queryParams = queryParams.set(key, val);
-        } else if (typeof value === 'string') {
-          queryParams = queryParams.set(key, value);
-        } else {
-          queryParams = queryParams.set(key, JSON.stringify(value));
-        }
-      }
-    });
+    let queryParams = __utils.getQueryParams(queryParamBase);
 
     return this.http.get<__model.Pet[]>(this.apiConfigService.options.apiUrl + `/v2/pet/findByTags`, {params: queryParams});
   }
