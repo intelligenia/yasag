@@ -597,10 +597,11 @@ function getFormResetFunction(
 
   if (formArrayReset.length > 0) {
     res += indent("reset(value?: any): void {\n");
-    res += indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
+    res += indent(`this.form.reset();`, 2);
     for (const i in formArrayReset) {
       res += indent(formArrayReset[i]);
     }
+    res += indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
     res += indent("}\n\n");
   }
 
