@@ -48,4 +48,10 @@ export class StoreDeleteOrderFormService extends YASAGPostFormService<string> {
   }
 
 
+  reset(value?: any): void {
+    this.form.reset();    super.reset(value, false); 
+  }
+  patch(value: any): void {
+    this.form.patchValue(value);
+  }
 }

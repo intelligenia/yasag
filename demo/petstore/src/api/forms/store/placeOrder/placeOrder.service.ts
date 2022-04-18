@@ -55,4 +55,10 @@ export class StorePlaceOrderFormService extends YASAGPostFormService<__model.Ord
   }
 
 
+  reset(value?: any): void {
+    this.form.reset();    super.reset(value, false); 
+  }
+  patch(value: any): void {
+    this.form.patchValue(value);
+  }
 }

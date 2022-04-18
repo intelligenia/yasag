@@ -50,4 +50,10 @@ export class PetUploadImageFormService extends YASAGPostFormService<__model.ApiR
   }
 
 
+  reset(value?: any): void {
+    this.form.reset();    super.reset(value, false); 
+  }
+  patch(value: any): void {
+    this.form.patchValue(value);
+  }
 }
