@@ -37,7 +37,7 @@ export class PetFindByTagsFormService extends YASAGGetFormService<__model.Pet[]>
   }
 
   submit(value: any = false, cache = true, only_cache = false): Observable<__model.Pet[]> {
-    const result = this.service.findByTags(value || this.form.value, this.multipart);
+    const result = val => this.service.findByTags(val);
     return this._submit('__model.Pet[]', result, value, cache, only_cache );
   }
   listen(value: any = false, submit: boolean = true): Observable<__model.Pet[]> {
@@ -49,7 +49,8 @@ export class PetFindByTagsFormService extends YASAGGetFormService<__model.Pet[]>
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

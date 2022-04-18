@@ -38,7 +38,7 @@ export class UserLoginFormService extends YASAGGetFormService<string> {
   }
 
   submit(value: any = false, cache = true, only_cache = false): Observable<string> {
-    const result = this.service.login(value || this.form.value, this.multipart);
+    const result = val => this.service.login(val);
     return this._submit('string', result, value, cache, only_cache );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -50,7 +50,8 @@ export class UserLoginFormService extends YASAGGetFormService<string> {
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);
