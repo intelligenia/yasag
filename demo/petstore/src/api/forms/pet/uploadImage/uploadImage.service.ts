@@ -39,7 +39,7 @@ export class PetUploadImageFormService extends YASAGPostFormService<__model.ApiR
   }
 
   submit(value: any = false): Observable<__model.ApiResponse> {
-    const result = this.service.uploadImage(value || this.form.value, this.multipart);
+    const result = val => this.service.uploadImage(val);
     return this._submit('__model.ApiResponse', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<__model.ApiResponse> {
@@ -51,7 +51,8 @@ export class PetUploadImageFormService extends YASAGPostFormService<__model.ApiR
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

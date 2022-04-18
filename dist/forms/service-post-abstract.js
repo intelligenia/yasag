@@ -44,7 +44,7 @@ function createServicePostAbstractClass(config) {
       this.defaultValue = this.form.value;
     }
 
-    protected _submit(type: string,  result: Observable<Type>, paramName:string, value: any = false, isPatch: boolean): Observable<Type> {
+    protected _submit(type: string,  result:  (value) => Observable<Type>, paramName:string, value: any = false, isPatch: boolean): Observable<Type> {
       const cache = false;
       const only_cache = false;
       // Deep copy of value
@@ -91,7 +91,7 @@ function createServicePostAbstractClass(config) {
 
       this.loadingSubject.next(true);
       this.serverErrorsSubject.next(null);
-      this._try(type, result, subject, value, cache_hit, cache, cacheKey);
+      this._try(type, result(value), subject, value, cache_hit, cache, cacheKey);
       return subject.asObservable();
     }
 
@@ -179,7 +179,6 @@ function createServicePostAbstractClass(config) {
     }
 
     reset(value?: any, isPatch = false): void {
-      this.form.reset();
       this.serverErrorsSubject.next(null);
       this.loadingSubject.next(false);
       this.form.patchValue(this.defaultValue);

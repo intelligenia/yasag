@@ -57,7 +57,7 @@ export class UserCreateWithArrayFormService extends YASAGPostFormService<string>
   }
 
   submit(value: any = false): Observable<string> {
-    const result = this.service.createWithArray(value || this.form.value, this.multipart);
+    const result = val => this.service.createWithArray(val);
     return this._submit('string', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -69,7 +69,8 @@ export class UserCreateWithArrayFormService extends YASAGPostFormService<string>
 
 
   reset(value?: any): void {
-    this.form.reset();    while ((<FormArray>this.form['controls']['body']).length) {
+    this.form.reset();
+    while ((<FormArray>this.form['controls']['body']).length) {
       this.removeBody(0);
     }
     if (value && value['body']) {
