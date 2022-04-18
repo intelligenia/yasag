@@ -75,7 +75,7 @@ function createServiceGetAbstractClass(config) {
       this.loadingSubject.next(true);
       this.serverErrorsSubject.next(null);
       this.currentValue = value;
-      this._try(type, result, subject, value, cache_hit, cache, cacheKey);
+      this._try(type, result(value), subject, value, cache_hit, cache, cacheKey);
       return subject.asObservable();
     }
 
