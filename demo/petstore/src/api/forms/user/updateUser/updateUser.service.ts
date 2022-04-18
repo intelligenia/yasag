@@ -47,7 +47,7 @@ export class UserUpdateUserFormService extends YASAGPostFormService<string> {
   }
 
   submit(value: any = false): Observable<string> {
-    const result = this.service.updateUser(value || this.form.value, this.multipart);
+    const result = val => this.service.updateUser(val);
     return this._submit('string', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -59,7 +59,8 @@ export class UserUpdateUserFormService extends YASAGPostFormService<string> {
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

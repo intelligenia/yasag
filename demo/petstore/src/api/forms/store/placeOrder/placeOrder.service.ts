@@ -44,7 +44,7 @@ export class StorePlaceOrderFormService extends YASAGPostFormService<__model.Ord
   }
 
   submit(value: any = false): Observable<__model.Order> {
-    const result = this.service.placeOrder(value || this.form.value, this.multipart);
+    const result = val => this.service.placeOrder(val);
     return this._submit('__model.Order', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<__model.Order> {
@@ -56,7 +56,8 @@ export class StorePlaceOrderFormService extends YASAGPostFormService<__model.Ord
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

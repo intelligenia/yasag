@@ -37,7 +37,7 @@ export class UserDeleteUserFormService extends YASAGPostFormService<string> {
   }
 
   submit(value: any = false): Observable<string> {
-    const result = this.service.deleteUser(value || this.form.value, this.multipart);
+    const result = val => this.service.deleteUser(val);
     return this._submit('string', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -49,7 +49,8 @@ export class UserDeleteUserFormService extends YASAGPostFormService<string> {
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

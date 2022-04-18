@@ -61,7 +61,7 @@ export class PetUpdatePetFormService extends YASAGPostFormService<string> {
   }
 
   submit(value: any = false): Observable<string> {
-    const result = this.service.updatePet(value || this.form.value, this.multipart);
+    const result = val => this.service.updatePet(val);
     return this._submit('string', result, 'null', value, false );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -73,7 +73,8 @@ export class PetUpdatePetFormService extends YASAGPostFormService<string> {
 
 
   reset(value?: any): void {
-    this.form.reset();    while ((<FormArray>this.form['controls']['body']['controls']['tags']).length) {
+    this.form.reset();
+    while ((<FormArray>this.form['controls']['body']['controls']['tags']).length) {
       this.removeBodyTags(0);
     }
     if (value && value['body'] && value['body']['tags']) {

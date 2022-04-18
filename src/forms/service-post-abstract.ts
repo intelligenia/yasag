@@ -44,7 +44,7 @@ export function createServicePostAbstractClass(config: Config) {
       this.defaultValue = this.form.value;
     }
 
-    protected _submit(type: string,  result: Observable<Type>, paramName:string, value: any = false, isPatch: boolean): Observable<Type> {
+    protected _submit(type: string,  result:  (value) => Observable<Type>, paramName:string, value: any = false, isPatch: boolean): Observable<Type> {
       const cache = false;
       const only_cache = false;
       // Deep copy of value

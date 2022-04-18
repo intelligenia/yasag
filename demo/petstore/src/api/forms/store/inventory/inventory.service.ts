@@ -37,7 +37,7 @@ export class StoreInventoryFormService extends YASAGGetFormService<{[key: string
   }
 
   submit(value: any = false, cache = true, only_cache = false): Observable<{[key: string]: number}> {
-    const result = this.service.inventory();
+    const result = val => this.service.inventory();
     return this._submit('{[key: string]: number}', result, value, cache, only_cache );
   }
   listen(value: any = false, submit: boolean = true): Observable<{[key: string]: number}> {
@@ -49,7 +49,8 @@ export class StoreInventoryFormService extends YASAGGetFormService<{[key: string
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

@@ -280,7 +280,7 @@ function getFormSubmitFunction(simpleName, paramGroups, methodName, method) {
     else {
         res += utils_1.indent(`submit(value: any = false): Observable<${type}> {\n`);
     }
-    res += utils_1.indent(`const result = this.service.${simpleName}(${getSubmitFnParameters("value || this.form.value, this.multipart", paramGroups)});\n`, 2);
+    res += utils_1.indent(`const result = val => this.service.${simpleName}(${getSubmitFnParameters("val", paramGroups)});\n`, 2);
     if (methodName === "get") {
         res += utils_1.indent(`return this._submit('${type}', result, value, cache, only_cache );\n`, 2);
     }
@@ -306,7 +306,7 @@ function getFormSubmitFunction(simpleName, paramGroups, methodName, method) {
 function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName) {
     let res = "";
     res += utils_1.indent("reset(value?: any): void {\n");
-    res += utils_1.indent(`this.form.reset();`, 2);
+    res += utils_1.indent(`this.form.reset();\n`, 2);
     for (const i in formArrayReset) {
         res += utils_1.indent(formArrayReset[i]);
     }

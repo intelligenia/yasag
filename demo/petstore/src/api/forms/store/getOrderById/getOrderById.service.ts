@@ -37,7 +37,7 @@ export class StoreGetOrderByIdFormService extends YASAGGetFormService<__model.Or
   }
 
   submit(value: any = false, cache = true, only_cache = false): Observable<__model.Order> {
-    const result = this.service.getOrderById(value || this.form.value, this.multipart);
+    const result = val => this.service.getOrderById(val);
     return this._submit('__model.Order', result, value, cache, only_cache );
   }
   listen(value: any = false, submit: boolean = true): Observable<__model.Order> {
@@ -49,7 +49,8 @@ export class StoreGetOrderByIdFormService extends YASAGGetFormService<__model.Or
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);

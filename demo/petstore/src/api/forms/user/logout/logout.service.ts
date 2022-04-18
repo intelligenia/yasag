@@ -37,7 +37,7 @@ export class UserLogoutFormService extends YASAGGetFormService<string> {
   }
 
   submit(value: any = false, cache = true, only_cache = false): Observable<string> {
-    const result = this.service.logout();
+    const result = val => this.service.logout();
     return this._submit('string', result, value, cache, only_cache );
   }
   listen(value: any = false, submit: boolean = true): Observable<string> {
@@ -49,7 +49,8 @@ export class UserLogoutFormService extends YASAGGetFormService<string> {
 
 
   reset(value?: any): void {
-    this.form.reset();    super.reset(value, false); 
+    this.form.reset();
+    super.reset(value, false); 
   }
   patch(value: any): void {
     this.form.patchValue(value);
