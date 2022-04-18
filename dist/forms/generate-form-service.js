@@ -305,23 +305,19 @@ function getFormSubmitFunction(simpleName, paramGroups, methodName, method) {
 }
 function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName) {
     let res = "";
-    if (formArrayReset.length > 0) {
-        res += utils_1.indent("reset(value?: any): void {\n");
-        res += utils_1.indent(`this.form.reset();`, 2);
-        for (const i in formArrayReset) {
-            res += utils_1.indent(formArrayReset[i]);
-        }
-        res += utils_1.indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
-        res += utils_1.indent("}\n\n");
+    res += utils_1.indent("reset(value?: any): void {\n");
+    res += utils_1.indent(`this.form.reset();`, 2);
+    for (const i in formArrayReset) {
+        res += utils_1.indent(formArrayReset[i]);
     }
-    if (formArrayPatch.length > 0) {
-        res += utils_1.indent("patch(value: any): void {\n");
-        for (const i in formArrayPatch) {
-            res += utils_1.indent(formArrayPatch[i]);
-        }
-        res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 2);
-        res += utils_1.indent("}\n");
+    res += utils_1.indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
+    res += utils_1.indent("}\n\n");
+    res += utils_1.indent("patch(value: any): void {\n");
+    for (const i in formArrayPatch) {
+        res += utils_1.indent(formArrayPatch[i]);
     }
+    res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 2);
+    res += utils_1.indent("}\n");
     return res;
 }
 function getSubmitFnParameters(name, paramGroups) {
