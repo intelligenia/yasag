@@ -73,13 +73,13 @@ export class PetAddPetFormService extends YASAGPostFormService<string> {
 
 
   reset(value?: any): void {
-    super.reset(value, false); 
-    while ((<FormArray>this.form['controls']['body']['controls']['tags']).length) {
+    this.form.reset();    while ((<FormArray>this.form['controls']['body']['controls']['tags']).length) {
       this.removeBodyTags(0);
     }
     if (value && value['body'] && value['body']['tags']) {
       this.addBodyTags(value['body']['tags'].length);
     }
+    super.reset(value, false); 
   }
   patch(value: any): void {
     if (value && value['body'] && value['body']['tags']) {

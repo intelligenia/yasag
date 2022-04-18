@@ -69,13 +69,13 @@ export class UserCreateWithListFormService extends YASAGPostFormService<string> 
 
 
   reset(value?: any): void {
-    super.reset(value, false); 
-    while ((<FormArray>this.form['controls']['body']).length) {
+    this.form.reset();    while ((<FormArray>this.form['controls']['body']).length) {
       this.removeBody(0);
     }
     if (value && value['body']) {
       this.addBody(value['body'].length);
     }
+    super.reset(value, false); 
   }
   patch(value: any): void {
     if (value && value['body']) {
