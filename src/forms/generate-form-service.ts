@@ -545,8 +545,8 @@ function getFormSubmitFunction(
   }
 
   res += indent(
-    `const result = this.service.${simpleName}(${getSubmitFnParameters(
-      "value || this.form.value, this.multipart",
+    `const result = val => this.service.${simpleName}(${getSubmitFnParameters(
+      "val",
       paramGroups
     )});\n`,
     2
@@ -596,7 +596,7 @@ function getFormResetFunction(
   let res = "";
 
   res += indent("reset(value?: any): void {\n");
-  res += indent(`this.form.reset();`, 2);
+  res += indent(`this.form.reset();\n`, 2);
   for (const i in formArrayReset) {
     res += indent(formArrayReset[i]);
   }

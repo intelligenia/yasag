@@ -91,7 +91,7 @@ export function createServicePostAbstractClass(config: Config) {
 
       this.loadingSubject.next(true);
       this.serverErrorsSubject.next(null);
-      this._try(type, result, subject, value, cache_hit, cache, cacheKey);
+      this._try(type, result(value), subject, value, cache_hit, cache, cacheKey);
       return subject.asObservable();
     }
 
@@ -179,7 +179,6 @@ export function createServicePostAbstractClass(config: Config) {
     }
 
     reset(value?: any, isPatch = false): void {
-      this.form.reset();
       this.serverErrorsSubject.next(null);
       this.loadingSubject.next(false);
       this.form.patchValue(this.defaultValue);
