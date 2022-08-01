@@ -1,10 +1,18 @@
 /** Shared types */
 /* The 'parameters' MethodName type is only technical and serves for situations when common parameters are defined
-* on the same level as HTTP methods */
-export type MethodName = 'get' | 'patch' | 'post' | 'put' | 'delete';
-export type HttpCode = '200' | '201' | '204' |
-  '400' | '401' | '403' | '404' | '409' | '417' |
-  '500';
+ * on the same level as HTTP methods */
+export type MethodName = "get" | "patch" | "post" | "put" | "delete";
+export type HttpCode =
+  | "200"
+  | "201"
+  | "204"
+  | "400"
+  | "401"
+  | "403"
+  | "404"
+  | "409"
+  | "417"
+  | "500";
 
 export interface Method {
   tags: [string];
@@ -34,6 +42,7 @@ interface ParameterSchemaBase {
   pattern?: string;
   type?: string;
   uniqueItems?: boolean;
+  "x-nullable"?: boolean;
 }
 
 // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#parameterObject
@@ -64,8 +73,19 @@ export interface Response {
 }
 
 export type NativeNames =
-  'binary' | 'boolean' | 'byte' | 'date' | 'dateTime' | 'double' |
-  'file' | 'float' | 'integer' | 'long' | 'number' | 'object' |
-  'password' | 'string';
+  | "binary"
+  | "boolean"
+  | "byte"
+  | "date"
+  | "dateTime"
+  | "double"
+  | "file"
+  | "float"
+  | "integer"
+  | "long"
+  | "number"
+  | "object"
+  | "password"
+  | "string";
 
-export type FileType = 'ts' | 'html' | 'scss';
+export type FileType = "ts" | "html" | "scss";

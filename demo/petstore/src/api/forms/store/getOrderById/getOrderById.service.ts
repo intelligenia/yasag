@@ -1,17 +1,7 @@
 /* tslint:disable:max-line-length */
-/**
- * This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.
- * 1.0.0
- * Swagger Petstore
- * http://swagger.io/terms/
- * apiteam@swagger.io
- * Apache 2.0
- * http://www.apache.org/licenses/LICENSE-2.0.html
- * petstore.swagger.io/v2
- */
 
 import { Injectable, NgZone } from '@angular/core';
-import {FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormGroup, Validators} from '@angular/forms';
 import {  Observable } from 'rxjs';
 import { StoreService } from '../../../controllers/Store';
 import * as __model from '../../../model';
@@ -31,7 +21,7 @@ export class StoreGetOrderByIdFormService extends YASAGGetFormService<__model.Or
   ) {
     super('StoreGetOrderById', apiConfigService, ngZone);
     this.form = new FormGroup({
-      orderId: new FormControl({value: undefined, disabled: false}, [Validators.max(10), Validators.min(1), Validators.required]),
+      orderId: new FormControl<number|null>({value: undefined, disabled: false}, [Validators.max(10), Validators.min(1), Validators.required]),
     });
     this.init()
   }

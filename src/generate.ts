@@ -1,17 +1,18 @@
 /** Generator of API models (interfaces) from BE API json */
-import * as fs from 'fs';
-import * as conf from './conf';
+import * as fs from "fs";
+import * as conf from "./conf";
 
-import * as path from 'path';
-import {processDefinitions} from './definitions';
-import {processPaths} from './requests/process-paths';
-import {createDir, emptyDir, out, processHeader, TermColors} from './utils';
+import * as path from "path";
+import { processDefinitions } from "./definitions";
+import { processPaths } from "./requests/process-paths";
+import { createDir, emptyDir, out, processHeader, TermColors } from "./utils";
 
 export interface Config {
   header: string;
   dest: string;
   generateStore: boolean;
   unwrapSingleParamMethods: boolean;
+  typedForms: boolean;
 }
 
 /**
@@ -37,8 +38,10 @@ export function generate(
   omitBasepath = false,
   environmentAPI: string = conf.environmentAPI,
   omitHeader = false,
-  readOnly= '',
-  environmentCache = conf.environmentCache) {
+  typedForms = false,
+  readOnly = "",
+  environmentCache = conf.environmentCache
+) {
   let schema: any;
 
   try {
@@ -46,7 +49,10 @@ export function generate(
     schema = JSON.parse(content.toString());
   } catch (e) {
     if (e instanceof SyntaxError) {
-      out(`${src} is either not a valid JSON scheme or contains non-printable characters`, TermColors.red);
+      out(
+        `${src} is either not a valid JSON scheme or contains non-printable characters`,
+        TermColors.red
+      );
     } else out(`JSON scheme file '${src}' does not exist`, TermColors.red);
 
     out(`${e}`);
@@ -55,23 +61,37 @@ export function generate(
 
   // normalize basePath, strip trailing '/'s
   const basePath = schema.basePath;
-  if (typeof basePath === 'string') {
-    schema.basePath = basePath.replace(/\/+$/, '');
-  } else schema.basePath = '';
+  if (typeof basePath === "string") {
+    schema.basePath = basePath.replace(/\/+$/, "");
+  } else schema.basePath = "";
 
   if (omitBasepath) {
-    schema.basePath = '';
+    schema.basePath = "";
   }
 
   recreateDirectories(dest, generateStore);
 
   const header = processHeader(schema, omitVersion, omitHeader);
-  const config: Config = {header, dest, generateStore, unwrapSingleParamMethods};
+  const config: Config = {
+    header,
+    dest,
+    generateStore,
+    unwrapSingleParamMethods,
+    typedForms,
+  };
 
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);
   const definitions = processDefinitions(schema.definitions, config);
-  processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`,
-               config, definitions, schema.basePath, environmentAPI, readOnly, environmentCache);
+  processPaths(
+    schema.paths,
+    `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`,
+    config,
+    definitions,
+    schema.basePath,
+    environmentAPI,
+    readOnly,
+    environmentCache
+  );
 }
 
 function recreateDirectories(dest: string, generateStore: boolean) {
