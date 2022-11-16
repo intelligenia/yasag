@@ -118,7 +118,9 @@ function createServicePostAbstractClass(config) {
       }else {
         cacheFunction = val => {
           this.ngZone.run(() => {
-            val = JSON.parse(JSON.stringify(val));
+            if (type !== 'Blob') {
+              val = JSON.parse(JSON.stringify(val));
+            }
             if (!cache_hit || JSON.stringify(this.apiConfigService.cache[this.cache + JSON.stringify(value) + cache]) !== JSON.stringify(val)) {
               this.apiConfigService.cache[this.cache + JSON.stringify(value) + true] = val;
               this.apiConfigService.cache[this.cache + JSON.stringify('ALL') + true] = val;

@@ -19,15 +19,11 @@ function generateFormService(config, name, params, definitions, simpleName, form
     content += getImports(name, constructor, methodName);
     // Class declaration
     content += `@Injectable()\n`;
-    let type = method.responseDef.type;
-    if (method.responseDef.format && method.responseDef.format === "binary") {
-        type = "Blob";
-    }
     if (methodName === "get") {
-        content += `export class ${className}FormService extends YASAGGetFormService<${type}> {\n`;
+        content += `export class ${className}FormService extends YASAGGetFormService<${method.responseDef.type}> {\n`;
     }
     else {
-        content += `export class ${className}FormService extends YASAGPostFormService<${type}> {\n`;
+        content += `export class ${className}FormService extends YASAGPostFormService<${method.responseDef.type}> {\n`;
     }
     // Class variables
     content += variables;
