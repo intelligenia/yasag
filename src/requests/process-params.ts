@@ -2,11 +2,11 @@
  * Processing of custom types from `paths` section
  * in the schema
  */
-import * as _ from 'lodash';
+import * as _ from "lodash";
 
-import {processProperty} from '../common';
-import {Parameter, Schema} from '../types';
-import {indent} from '../utils';
+import { processProperty } from "../common";
+import { Parameter, Schema } from "../types";
+import { indent } from "../utils";
 
 export interface ProcessParamsOutput {
   paramDef: string;
@@ -20,32 +20,36 @@ export interface ProcessParamsOutput {
  * @param def definition
  * @param paramsType name of the type
  */
-export function processParams(def: Parameter[], paramsType: string): ProcessParamsOutput {
-  let paramDef = '';
-  let typesOnly = '';
+export function processParams(
+  def: Parameter[],
+  paramsType: string
+): ProcessParamsOutput {
+  let paramDef = "";
+  let typesOnly = "";
 
   paramDef += `export interface ${paramsType} {\n`;
 
-  const params = _.map(def, p => processProperty(
-    parameterToSchema(p), p.name, paramsType, p.required));
+  const params = _.map(def, (p) =>
+    processProperty(parameterToSchema(p), p.name, paramsType, p.required)
+  );
   const isInterfaceEmpty = !params.length;
-  const usesGlobalType = params.some(p => !p.native);
+  const usesGlobalType = params.some((p) => !p.native);
 
-  paramDef += indent(_.map(params, 'property') as string[]);
+  paramDef += indent(_.map(params, "property") as string[]);
   paramDef += `\n`;
   paramDef += `}\n`;
-  const enums = _.map(params, 'enumDeclaration').filter(Boolean);
+  const enums = _.map(params, "enumDeclaration").filter(Boolean);
 
   if (enums.length) {
     paramDef += `\n`;
-    paramDef += enums.join('\n\n');
+    paramDef += enums.join("\n\n");
     paramDef += `\n`;
   }
 
   params.sort((p1, p2) => (p1.isRequired ? 0 : 1) - (p2.isRequired ? 0 : 1));
-  typesOnly = params.map(p => p.propertyAsMethodParameter).join(', ');
+  typesOnly = params.map((p) => p.propertyAsMethodParameter).join(", ");
 
-  return {paramDef, typesOnly, usesGlobalType, isInterfaceEmpty};
+  return { paramDef, typesOnly, usesGlobalType, isInterfaceEmpty };
 }
 
 // TODO! use required array to set the variable
@@ -67,6 +71,7 @@ export function parameterToSchema(param: Parameter): Schema {
       pattern: param.pattern,
       type: param.type,
       uniqueItems: param.uniqueItems,
+      "x-nullable": param["x-nullable"],
     },
     ...param.schema, // move level up
   };

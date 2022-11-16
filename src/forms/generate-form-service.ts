@@ -46,7 +46,8 @@ export function generateFormService(
     params,
     formArrayReset,
     formArrayPatch,
-    readOnly
+    readOnly,
+    config
   );
 
   const variables = getVariables(method);
@@ -90,7 +91,9 @@ function getImports(name: string, constructor: string, methodName: string) {
   const imports: string[] = [];
 
   if (constructor.match(/new FormArray\(/)) imports.push("FormArray");
-  if (constructor.match(/new FormControl\(/)) imports.push("FormControl");
+  if (constructor.match(/new UntypedFormArray\(/))
+    imports.push("UntypedFormArray");
+  if (constructor.match(/new FormControl/)) imports.push("FormControl");
   if (constructor.match(/new FormGroup\(/)) imports.push("FormGroup");
   if (constructor.match(/\[Validators\./)) imports.push("Validators");
 
@@ -138,7 +141,8 @@ function getConstructor(
   params: Parameter[],
   formArrayReset: string[],
   formArrayPatch: string[],
-  readOnly: string
+  readOnly: string,
+  config: Config
 ) {
   const definitionsMap = _.groupBy(definitions, "name");
   const parentTypes: string[] = [];
@@ -154,7 +158,8 @@ function getConstructor(
     "value",
     formArrayReset,
     formArrayPatch,
-    readOnly
+    readOnly,
+    config
   );
 
   let res = indent("constructor(\n");
@@ -192,6 +197,7 @@ function walkParamOrProp(
   formArrayReset: string[],
   formArrayPatch: string[],
   readOnly: string,
+  config: Config,
   formArrayParams = "",
   subArrayReset: string[] = [],
   subArrayPatch: string[] = [],
@@ -202,14 +208,17 @@ function walkParamOrProp(
   const res: string[] = [];
   let schema: Record<string, Schema>;
   let required: string[];
+  let nullable: string[];
 
   // create unified inputs for
   // 1. parameters
   if (Array.isArray(definition)) {
     schema = {};
     required = [];
+    nullable = [];
     definition.forEach((param) => {
       if (param.required) required.push(param.name);
+      if (param["x-nullable"]) nullable.push(param.name);
       schema[param.name] = parameterToSchema(param);
     });
     // 2. object definition
@@ -228,6 +237,7 @@ function walkParamOrProp(
     const name = paramName;
     const newPath = [...path, name];
     const isRequired = required && required.includes(name);
+    const isNullable = nullable && nullable.includes(name);
 
     let newParentTypes: string[] = [];
     if (ref) newParentTypes = [...parentTypes, ref];
@@ -243,6 +253,7 @@ function walkParamOrProp(
         name,
         newPath,
         isRequired,
+        isNullable,
         definitions,
         newParentTypes,
         `${control}['controls']['${name}']`,
@@ -257,7 +268,8 @@ function walkParamOrProp(
         parent,
         parents,
         nameParents,
-        readOnly
+        readOnly,
+        config
       );
 
       res.push(fieldDefinition);
@@ -273,6 +285,7 @@ function makeField(
   name: string,
   path: string[],
   required: boolean,
+  nullable: boolean,
   definitions: _.Dictionary<ProcessedDefinition[]>,
   parentTypes: string[],
   formControl: string,
@@ -287,7 +300,8 @@ function makeField(
   parent: string,
   parents: string,
   nameParents = "",
-  readOnly: string
+  readOnly: string,
+  config: Config
 ): string {
   let definition: ProcessedDefinition;
   let type = param.type;
@@ -322,6 +336,7 @@ function makeField(
           formArrayReset,
           formArrayPatch,
           readOnly,
+          config,
           formArrayParams + name + ": number" + ", ",
           mySubArrayReset,
           mySubArrayPatch,
@@ -330,6 +345,9 @@ function makeField(
           nameParents + _.upperFirst(_.camelCase(name.replace("_", "-")))
         );
         control = "FormArray";
+        if (config.typedForms) {
+          control = "UntypedFormArray";
+        }
         initializer = `[]`;
         let addMethod = "";
         addMethod += indent(
@@ -337,7 +355,7 @@ function makeField(
             _.camelCase(name.replace("_", "-"))
           )}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`
         );
-        addMethod += indent(`const control = <FormArray>${formControl};\n`, 2);
+        addMethod += indent(`const control = <${control}>${formControl};\n`, 2);
         addMethod += indent(
           `const fg = new FormGroup({\n${fields}\n}, []);\n`,
           2
@@ -357,7 +375,7 @@ function makeField(
           )}(${formArrayParams} i: number): void {\n`
         );
         removeMethod += indent(
-          `const control = <FormArray>${formControl};\n`,
+          `const control = <${control}>${formControl};\n`,
           2
         );
         removeMethod += indent(`control.removeAt(i);\n`, 2);
@@ -367,7 +385,7 @@ function makeField(
         if (formArrayParams === "") {
           let resetMethod = "";
           resetMethod += indent(
-            `while ((<FormArray>${formControl}).length) {\n`
+            `while ((<${control}>${formControl}).length) {\n`
           );
           resetMethod += indent(
             `this.remove${nameParents}${_.upperFirst(
@@ -458,7 +476,11 @@ function makeField(
         }
       }
     } else {
+      let isNullable = nullable ? "|null" : "";
       control = "FormControl";
+      if (config.typedForms) {
+        control += `<${type}${isNullable}>`;
+      }
       initializer =
         typeof param.default === "string"
           ? `'${param.default}'`
@@ -482,6 +504,7 @@ function makeField(
       formArrayReset,
       formArrayPatch,
       readOnly,
+      config,
       formArrayParams,
       subArrayReset,
       subArrayPatch,

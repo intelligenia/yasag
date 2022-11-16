@@ -1,14 +1,4 @@
 /* tslint:disable:max-line-length */
-/**
- * This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.
- * 1.0.0
- * Swagger Petstore
- * http://swagger.io/terms/
- * apiteam@swagger.io
- * Apache 2.0
- * http://www.apache.org/licenses/LICENSE-2.0.html
- * petstore.swagger.io/v2
- */
 
 import { Injectable, NgZone } from '@angular/core';
 import {FormArray, FormControl, FormGroup, Validators} from '@angular/forms';
@@ -32,15 +22,15 @@ export class PetUpdatePetFormService extends YASAGPostFormService<string> {
     super('PetUpdatePet', apiConfigService, ngZone);
     this.form = new FormGroup({
       body: new FormGroup({
-        id: new FormControl({value: undefined, disabled: false}, []),
+        id: new FormControl<number|null>({value: undefined, disabled: false}, []),
         category: new FormGroup({
-          id: new FormControl({value: undefined, disabled: false}, []),
-          name: new FormControl({value: undefined, disabled: false}, []),
+          id: new FormControl<number|null>({value: undefined, disabled: false}, []),
+          name: new FormControl<string|null>({value: undefined, disabled: false}, []),
         }, []),
-        name: new FormControl({value: undefined, disabled: false}, [Validators.required]),
+        name: new FormControl<string|null>({value: undefined, disabled: false}, [Validators.required]),
         photoUrls: new FormControl([], [Validators.required]),
         tags: new FormArray([], []),
-        status: new FormControl({value: undefined, disabled: false}, []),
+        status: new FormControl<string|null>({value: undefined, disabled: false}, []),
       }, [Validators.required]),
     });
     this.init()
@@ -49,8 +39,8 @@ export class PetUpdatePetFormService extends YASAGPostFormService<string> {
   public addBodyTags( tags: number = 1, position?: number, value?: any): void {
     const control = <FormArray>this.form['controls']['body']['controls']['tags'];
     const fg = new FormGroup({
-      id: new FormControl({value: undefined, disabled: false}, []),
-      name: new FormControl({value: undefined, disabled: false}, []),
+      id: new FormControl<number|null>({value: undefined, disabled: false}, []),
+      name: new FormControl<string|null>({value: undefined, disabled: false}, []),
     }, []);
     __utils.addField(control,tags, fg, position, value);
   }
