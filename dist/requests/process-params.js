@@ -13,23 +13,23 @@ const utils_1 = require("../utils");
  * @param paramsType name of the type
  */
 function processParams(def, paramsType) {
-    let paramDef = '';
-    let typesOnly = '';
+    let paramDef = "";
+    let typesOnly = "";
     paramDef += `export interface ${paramsType} {\n`;
-    const params = _.map(def, p => common_1.processProperty(parameterToSchema(p), p.name, paramsType, p.required));
+    const params = _.map(def, (p) => common_1.processProperty(parameterToSchema(p), p.name, paramsType, p.required));
     const isInterfaceEmpty = !params.length;
-    const usesGlobalType = params.some(p => !p.native);
-    paramDef += utils_1.indent(_.map(params, 'property'));
+    const usesGlobalType = params.some((p) => !p.native);
+    paramDef += utils_1.indent(_.map(params, "property"));
     paramDef += `\n`;
     paramDef += `}\n`;
-    const enums = _.map(params, 'enumDeclaration').filter(Boolean);
+    const enums = _.map(params, "enumDeclaration").filter(Boolean);
     if (enums.length) {
         paramDef += `\n`;
-        paramDef += enums.join('\n\n');
+        paramDef += enums.join("\n\n");
         paramDef += `\n`;
     }
     params.sort((p1, p2) => (p1.isRequired ? 0 : 1) - (p2.isRequired ? 0 : 1));
-    typesOnly = params.map(p => p.propertyAsMethodParameter).join(', ');
+    typesOnly = params.map((p) => p.propertyAsMethodParameter).join(", ");
     return { paramDef, typesOnly, usesGlobalType, isInterfaceEmpty };
 }
 exports.processParams = processParams;
@@ -51,6 +51,7 @@ function parameterToSchema(param) {
         pattern: param.pattern,
         type: param.type,
         uniqueItems: param.uniqueItems,
+        "x-nullable": param["x-nullable"],
     }, param.schema);
 }
 exports.parameterToSchema = parameterToSchema;

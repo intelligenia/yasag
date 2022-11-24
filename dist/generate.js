@@ -20,7 +20,7 @@ const utils_1 = require("./utils");
  * @param omitHeader
  * @param readOnly
  */
-function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false, readOnly = '', environmentCache = conf.environmentCache) {
+function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false, typedForms = false, readOnly = "", environmentCache = conf.environmentCache) {
     let schema;
     try {
         const content = fs.readFileSync(src);
@@ -37,17 +37,23 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
     }
     // normalize basePath, strip trailing '/'s
     const basePath = schema.basePath;
-    if (typeof basePath === 'string') {
-        schema.basePath = basePath.replace(/\/+$/, '');
+    if (typeof basePath === "string") {
+        schema.basePath = basePath.replace(/\/+$/, "");
     }
     else
-        schema.basePath = '';
+        schema.basePath = "";
     if (omitBasepath) {
-        schema.basePath = '';
+        schema.basePath = "";
     }
     recreateDirectories(dest, generateStore);
     const header = utils_1.processHeader(schema, omitVersion, omitHeader);
-    const config = { header, dest, generateStore, unwrapSingleParamMethods };
+    const config = {
+        header,
+        dest,
+        generateStore,
+        unwrapSingleParamMethods,
+        typedForms,
+    };
     if (!fs.existsSync(dest))
         fs.mkdirSync(dest);
     const definitions = definitions_1.processDefinitions(schema.definitions, config);

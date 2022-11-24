@@ -57,10 +57,14 @@ export function generateFormService(
 
   // Class declaration
   content += `@Injectable()\n`;
+  let observableType = method.responseDef.type;
+  if (observableType === "string" && method.responseDef.format === "binary") {
+    observableType = "Blob";
+  }
   if (methodName === "get") {
-    content += `export class ${className}FormService extends YASAGGetFormService<${method.responseDef.type}> {\n`;
+    content += `export class ${className}FormService extends YASAGGetFormService<${observableType}> {\n`;
   } else {
-    content += `export class ${className}FormService extends YASAGPostFormService<${method.responseDef.type}> {\n`;
+    content += `export class ${className}FormService extends YASAGPostFormService<${observableType}> {\n`;
   }
 
   // Class variables

@@ -7,10 +7,11 @@ const utils_1 = require("../utils");
  * @param config: global configuration for YASAG
  */
 function createUtils(config) {
+    const formArray = config.typedForms ? "UntypedFormArray" : "FormArray";
     const content = `
 
   import { HttpParams } from "@angular/common/http";
-  import { FormArray, FormGroup } from "@angular/forms";
+  import { ${formArray}, FormGroup } from "@angular/forms";
   import cloneDeep from 'lodash/cloneDeep';
 
   export function getQueryParams(queryParamBase): HttpParams {
@@ -50,7 +51,7 @@ function createUtils(config) {
     return bodyParamsWithoutUndefined;
   }
 
-  export function addField(control:FormArray, items: number, formGroup: FormGroup, position: number, value: any) {
+  export function addField(control:${formArray}, items: number, formGroup: FormGroup, position: number, value: any) {
     for (let i = 0; i < items; i++) {
       const fg = cloneDeep(formGroup);
 
