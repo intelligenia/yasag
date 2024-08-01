@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateFormService = void 0;
 const _ = require("lodash");
 const nodePath = require("path");
 const common_1 = require("../common");
@@ -12,11 +13,14 @@ function generateFormService(config, name, params, definitions, simpleName, form
     const formArrayReset = [];
     const formArrayPatch = [];
     const componentHTMLFileName = nodePath.join(formSubDirName, `${simpleName}.service.ts`);
-    utils_1.out(`Generating ${componentHTMLFileName}`, utils_1.TermColors.default);
-    const constructor = getConstructor(name, formName, className, definitions, params, formArrayReset, formArrayPatch, readOnly, config);
+    (0, utils_1.out)(`Generating ${componentHTMLFileName}`, utils_1.TermColors.default);
+    const form = getForm(formName, definitions, params, formArrayReset, formArrayPatch, readOnly, config);
+    const constructor = getConstructor(name, className);
     const variables = getVariables(method);
     // Imports
     content += getImports(name, constructor, methodName);
+    // Form type
+    content += `type FormValue = ValueOfForm<${className}FormService["form"]>;`;
     // Class declaration
     content += `@Injectable()\n`;
     let observableType = method.responseDef.type;
@@ -31,6 +35,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     }
     // Class variables
     content += variables;
+    content += form;
     // Constructor and add & remove form methods
     content += constructor;
     // Submit function
@@ -39,7 +44,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     // Reset function
     content += getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName);
     content += "}\n";
-    utils_1.writeFile(componentHTMLFileName, content, config.header);
+    (0, utils_1.writeFile)(componentHTMLFileName, content, config.header);
 }
 exports.generateFormService = generateFormService;
 function getImports(name, constructor, methodName) {
@@ -63,7 +68,8 @@ function getImports(name, constructor, methodName) {
     res += "import { APIConfigService } from '../../../apiconfig.service';\n\n";
     res += "import * as __utils from '../../../yasag-utils';\n\n";
     if (methodName === "get") {
-        res += "import { YASAGGetFormService } from '../../yasag-get.service';\n\n";
+        res +=
+            "import { ValueOfForm, YASAGGetFormService } from '../../yasag-get.service';\n\n";
     }
     else {
         res +=
@@ -76,31 +82,34 @@ function getVariables(method) {
     let content = "";
     Object.keys(method.method.method).forEach((k) => {
         if (k.startsWith("x-")) {
-            content += utils_1.indent(`static ${_.camelCase(k)} = ${JSON.stringify(method.method.method[k])};\n`);
+            content += (0, utils_1.indent)(`static ${_.camelCase(k)} = ${JSON.stringify(method.method.method[k])};\n`);
         }
     });
     return content;
 }
-function getConstructor(name, formName, className, definitions, params, formArrayReset, formArrayPatch, readOnly, config) {
-    const definitionsMap = _.groupBy(definitions, "name");
-    const parentTypes = [];
+function getConstructor(name, className) {
     const formArrayMethods = [];
-    const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes, `this.${formName}`, formArrayMethods, "value", "value", formArrayReset, formArrayPatch, readOnly, config);
-    let res = utils_1.indent("constructor(\n");
-    res += utils_1.indent(`apiConfigService: APIConfigService,\n`, 2);
-    res += utils_1.indent(`ngZone: NgZone,\n`, 2);
-    res += utils_1.indent(`private service: ${name}Service,\n`, 2);
-    res += utils_1.indent(") {\n");
-    res += utils_1.indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
-    res += utils_1.indent(`this.${formName} = new FormGroup({\n${formDefinition}\n});\n`, 2);
-    res += utils_1.indent(`this.init()\n`, 2);
-    res += utils_1.indent("}\n");
+    let res = (0, utils_1.indent)("constructor(\n");
+    res += (0, utils_1.indent)(`apiConfigService: APIConfigService,\n`, 2);
+    res += (0, utils_1.indent)(`ngZone: NgZone,\n`, 2);
+    res += (0, utils_1.indent)(`private service: ${name}Service,\n`, 2);
+    res += (0, utils_1.indent)(") {\n");
+    res += (0, utils_1.indent)(`super('${className}', apiConfigService, ngZone);\n`, 2);
+    res += (0, utils_1.indent)(`this.init();\n`, 2);
+    res += (0, utils_1.indent)("}\n");
     res += "\n";
     for (const method in formArrayMethods) {
         res += formArrayMethods[method];
         res += "\n";
     }
     return res;
+}
+function getForm(formName, definitions, params, formArrayReset, formArrayPatch, readOnly, config) {
+    const definitionsMap = _.groupBy(definitions, "name");
+    const parentTypes = [];
+    const formArrayMethods = [];
+    const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes, `this.${formName}`, formArrayMethods, "value", "value", formArrayReset, formArrayPatch, readOnly, config);
+    return (0, utils_1.indent)(`${formName} = new FormGroup({\n${formDefinition}\n});\n`, 1);
 }
 function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams = "", subArrayReset = [], subArrayPatch = [], parent = "", parents = "", nameParents = "") {
     const res = [];
@@ -118,7 +127,7 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
                 required.push(param.name);
             if (param["x-nullable"])
                 nullable.push(param.name);
-            schema[param.name] = process_params_1.parameterToSchema(param);
+            schema[param.name] = (0, process_params_1.parameterToSchema)(param);
         });
         // 2. object definition
     }
@@ -147,7 +156,7 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
             res.push(fieldDefinition);
         }
     });
-    return utils_1.indent(res);
+    return (0, utils_1.indent)(res);
 }
 function makeField(param, ref, name, path, required, nullable, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents = "", readOnly, config) {
     let definition;
@@ -167,7 +176,7 @@ function makeField(param, ref, name, path, required, nullable, definitions, pare
             }
             else {
                 const refType = param.items.$ref.replace(/^#\/definitions\//, "");
-                definition = definitions[common_1.normalizeDef(refType)][0];
+                definition = definitions[(0, common_1.normalizeDef)(refType)][0];
                 const mySubArrayReset = [];
                 const mySubArrayPatch = [];
                 const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams + name + ": number" + ", ", mySubArrayReset, mySubArrayPatch, name, parents + name + ", ", nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))));
@@ -177,72 +186,72 @@ function makeField(param, ref, name, path, required, nullable, definitions, pare
                 }
                 initializer = `[]`;
                 let addMethod = "";
-                addMethod += utils_1.indent(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
-                addMethod += utils_1.indent(`const control = <${control}>${formControl};\n`, 2);
-                addMethod += utils_1.indent(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 2);
-                addMethod += utils_1.indent(`__utils.addField(control,${name}, fg, position, value);\n`, 2);
-                addMethod += utils_1.indent(`}\n`);
+                addMethod += (0, utils_1.indent)(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
+                addMethod += (0, utils_1.indent)(`const control = <${control}>${formControl};\n`, 2);
+                addMethod += (0, utils_1.indent)(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 2);
+                addMethod += (0, utils_1.indent)(`__utils.addField(control,${name}, fg, position, value);\n`, 2);
+                addMethod += (0, utils_1.indent)(`}\n`);
                 formArrayMethods.push(addMethod);
                 let removeMethod = "";
-                removeMethod += utils_1.indent(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} i: number): void {\n`);
-                removeMethod += utils_1.indent(`const control = <${control}>${formControl};\n`, 2);
-                removeMethod += utils_1.indent(`control.removeAt(i);\n`, 2);
-                removeMethod += utils_1.indent(`}\n`);
+                removeMethod += (0, utils_1.indent)(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} i: number): void {\n`);
+                removeMethod += (0, utils_1.indent)(`const control = <${control}>${formControl};\n`, 2);
+                removeMethod += (0, utils_1.indent)(`control.removeAt(i);\n`, 2);
+                removeMethod += (0, utils_1.indent)(`}\n`);
                 formArrayMethods.push(removeMethod);
                 if (formArrayParams === "") {
                     let resetMethod = "";
-                    resetMethod += utils_1.indent(`while ((<${control}>${formControl}).length) {\n`);
-                    resetMethod += utils_1.indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 2);
-                    resetMethod += utils_1.indent(`}\n`);
-                    resetMethod += utils_1.indent(`if (${formValueIF}) {\n`);
-                    resetMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length);\n`, 2);
+                    resetMethod += (0, utils_1.indent)(`while ((<${control}>${formControl}).length) {\n`);
+                    resetMethod += (0, utils_1.indent)(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 2);
+                    resetMethod += (0, utils_1.indent)(`}\n`);
+                    resetMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
+                    resetMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length);\n`, 2);
                     mySubArrayReset.forEach((subarray) => {
-                        resetMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                        resetMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
                     });
-                    resetMethod += utils_1.indent(`}\n`);
+                    resetMethod += (0, utils_1.indent)(`}\n`);
                     formArrayReset.push(resetMethod);
                     let patchMethod = "";
-                    patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
-                    patchMethod += utils_1.indent(`while (this.form.${formValue}.length > 0) {\n`, 2);
-                    patchMethod += utils_1.indent(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 3);
-                    patchMethod += utils_1.indent(`}\n`, 2);
-                    patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
-                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
-                    patchMethod += utils_1.indent(`}\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
+                    patchMethod += (0, utils_1.indent)(`while (this.form.${formValue}.length > 0) {\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 3);
+                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
+                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
                     mySubArrayPatch.forEach((subarray) => {
-                        patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
                     });
-                    patchMethod += utils_1.indent(`}\n`);
+                    patchMethod += (0, utils_1.indent)(`}\n`);
                     formArrayPatch.push(patchMethod);
                 }
                 else {
                     let resetMethod = "";
                     resetMethod += `(${parent}_object, ${parent}) => {\n`;
-                    resetMethod += utils_1.indent(`if (${formValueIF}) {\n`);
-                    resetMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length);\n`, 2);
+                    resetMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
+                    resetMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length);\n`, 2);
                     mySubArrayReset.forEach((subarray) => {
-                        resetMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                        resetMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
                     });
-                    resetMethod += utils_1.indent(`}\n`);
+                    resetMethod += (0, utils_1.indent)(`}\n`);
                     resetMethod += `}`;
                     subArrayReset.push(resetMethod);
                     let patchMethod = "";
                     patchMethod += `(${parent}_object, ${parent}) => {\n`;
-                    patchMethod += utils_1.indent(`if (${formValueIF}) {\n`);
-                    patchMethod += utils_1.indent(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
-                    patchMethod += utils_1.indent(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 3);
-                    patchMethod += utils_1.indent(`}\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
+                    patchMethod += (0, utils_1.indent)(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
+                    patchMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 3);
+                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
                     mySubArrayPatch.forEach((subarray) => {
-                        patchMethod += utils_1.indent(`${formValue}.forEach(${subarray});\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
                     });
-                    patchMethod += utils_1.indent(`}\n`);
+                    patchMethod += (0, utils_1.indent)(`}\n`);
                     patchMethod += `}`;
                     subArrayPatch.push(patchMethod);
                 }
             }
         }
         else {
-            let isNullable = nullable ? "|null" : "";
+            let isNullable = nullable ? " | null" : " | undefined";
             control = "FormControl";
             if (config.typedForms) {
                 control += `<${type}${isNullable}>`;
@@ -256,7 +265,7 @@ function makeField(param, ref, name, path, required, nullable, definitions, pare
     }
     else {
         const refType = ref.replace(/^#\/definitions\//, "");
-        definition = definitions[common_1.normalizeDef(refType)][0];
+        definition = definitions[(0, common_1.normalizeDef)(refType)][0];
         control = "FormGroup";
         const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))));
         initializer = `{\n${fields}\n}`;
@@ -293,49 +302,48 @@ function getFormSubmitFunction(simpleName, paramGroups, methodName, method) {
         type = "Blob";
     }
     if (methodName === "get") {
-        res += utils_1.indent(`submit(value: any = false, cache = true, only_cache = false): Observable<${type}> {\n`);
+        res += (0, utils_1.indent)(`submit(value: FormValue | false = false, cache = true, only_cache = false): Observable<${type}> {\n`);
     }
     else {
-        res += utils_1.indent(`submit(value: any = false): Observable<${type}> {\n`);
+        res += (0, utils_1.indent)(`submit(value: FormValue | false = false): Observable<${type}> {\n`);
     }
-    res += utils_1.indent(`const result = val => this.service.${simpleName}(${getSubmitFnParameters("val", paramGroups)});\n`, 2);
+    res += (0, utils_1.indent)(`const result = val => this.service.${simpleName}(${getSubmitFnParameters("val", paramGroups)});\n`, 2);
     if (methodName === "get") {
-        res += utils_1.indent(`return this._submit('${type}', result, value, cache, only_cache );\n`, 2);
+        res += (0, utils_1.indent)(`return this._submit('${type}', result, value, cache, only_cache );\n`, 2);
     }
     else {
-        res += utils_1.indent(`return this._submit('${type}', result, '${paramName}', value, ${isPatch} );\n`, 2);
+        res += (0, utils_1.indent)(`return this._submit('${type}', result, '${paramName}', value, ${isPatch} );\n`, 2);
     }
-    res += utils_1.indent("}\n");
-    res += utils_1.indent("\n");
-    res += utils_1.indent(`listen(value: any = false, submit: boolean = true): Observable<${type}> {\n`);
-    res += utils_1.indent("if (submit) {\n", 2);
-    res += utils_1.indent("this.submit(value);\n", 3);
-    res += utils_1.indent("}\n", 2);
+    res += (0, utils_1.indent)("}\n");
+    res += (0, utils_1.indent)("\n\n");
+    res += (0, utils_1.indent)(`listen(value: FormValue | false = false, submit: boolean = true): Observable<${type}> {\n`);
+    res += (0, utils_1.indent)("if (submit) {\n", 2);
+    res += (0, utils_1.indent)("this.submit(value);\n", 3);
+    res += (0, utils_1.indent)("}\n", 2);
     if (methodName === "get") {
-        res += utils_1.indent(`return this._listen('${type}', value, submit);\n`, 2);
+        res += (0, utils_1.indent)(`return this._listen('${type}', value, submit);\n`, 2);
     }
     else {
-        res += utils_1.indent(`return this._listen(value, submit);\n`, 2);
+        res += (0, utils_1.indent)(`return this._listen(value, submit);\n`, 2);
     }
-    res += utils_1.indent("}\n");
-    res += utils_1.indent("\n");
+    res += (0, utils_1.indent)("}\n");
     return res;
 }
 function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodName) {
     let res = "";
-    res += utils_1.indent("reset(value?: any): void {\n");
-    res += utils_1.indent(`this.form.reset();\n`, 2);
+    res += (0, utils_1.indent)("reset(value?: FormValue): void {\n");
+    res += (0, utils_1.indent)(`this.form.reset();\n`, 2);
     for (const i in formArrayReset) {
-        res += utils_1.indent(formArrayReset[i]);
+        res += (0, utils_1.indent)(formArrayReset[i]);
     }
-    res += utils_1.indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
-    res += utils_1.indent("}\n\n");
-    res += utils_1.indent("patch(value: any): void {\n");
+    res += (0, utils_1.indent)(`super.reset(value, ${methodName === "patch"}); \n`, 2);
+    res += (0, utils_1.indent)("}\n\n");
+    res += (0, utils_1.indent)("patch(value: FormValue): void {\n");
     for (const i in formArrayPatch) {
-        res += utils_1.indent(formArrayPatch[i]);
+        res += (0, utils_1.indent)(formArrayPatch[i]);
     }
-    res += utils_1.indent(`this.${formName}.patchValue(value);\n`, 2);
-    res += utils_1.indent("}\n");
+    res += (0, utils_1.indent)(`this.${formName}.patchValue(value);\n`, 2);
+    res += (0, utils_1.indent)("}\n");
     return res;
 }
 function getSubmitFnParameters(name, paramGroups) {

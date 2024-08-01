@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.translateType = exports.normalizeDef = exports.processProperty = void 0;
 const _ = require("lodash");
 const conf = require("./conf");
 const utils_1 = require("./utils");
@@ -24,7 +25,7 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
             type += 'Enum';
         const list = prop.enum || prop.items.enum;
         const exp = exportEnums ? 'export ' : '';
-        enumDeclaration = `${exp}type ${type} =\n` + utils_1.indent('\'' + list.join('\' |\n\'')) + '\';';
+        enumDeclaration = `${exp}type ${type} =\n` + (0, utils_1.indent)('\'' + list.join('\' |\n\'')) + '\';';
         if (prop.type === 'array')
             type += '[]';
     }
@@ -84,7 +85,7 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
         comments.push(`format: ${prop.format}`);
     if (prop.default)
         comments.push(`default: ${prop.default}`);
-    const comment = utils_1.makeComment(comments);
+    const comment = (0, utils_1.makeComment)(comments);
     let property;
     let propertyAsMethodParameter;
     // pure type is returned if no name is specified

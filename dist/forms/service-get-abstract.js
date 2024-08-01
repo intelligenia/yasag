@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createServiceGetAbstractClass = void 0;
 const path = require("path");
 const conf = require("../conf");
 const utils_1 = require("../utils");
@@ -206,7 +207,7 @@ function createServiceGetAbstractClass(config) {
 
   }`;
     const classFileName = path.join(config.dest, conf.storeDir, `yasag-get.service.ts`);
-    utils_1.writeFile(classFileName, content, config.header);
+    (0, utils_1.writeFile)(classFileName, content, config.header);
 }
 exports.createServiceGetAbstractClass = createServiceGetAbstractClass;
 //# sourceMappingURL=service-get-abstract.js.map

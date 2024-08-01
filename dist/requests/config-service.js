@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createConfigService = void 0;
 const path = require("path");
 const utils_1 = require("../utils");
 function createConfigService(config, environmentAPI, environmentCache) {
@@ -67,7 +68,7 @@ function createConfigService(config, environmentAPI, environmentCache) {
     content += '  }\n';
     content += '}\n';
     const serviceFileName = path.join(config.dest, `apiconfig.service.ts`);
-    utils_1.writeFile(serviceFileName, content, config.header);
+    (0, utils_1.writeFile)(serviceFileName, content, config.header);
 }
 exports.createConfigService = createConfigService;
 //# sourceMappingURL=config-service.js.map

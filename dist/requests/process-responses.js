@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.processResponses = void 0;
 /**
  * Processing of custom types from `paths` section
  * in the schema
@@ -33,7 +34,7 @@ function processResponses(httpResponse, name, config) {
             properties.push(propertyOutput);
         }
         else {
-            properties.push(common_1.processProperty(response.schema, undefined, name));
+            properties.push((0, common_1.processProperty)(response.schema, undefined, name));
         }
     }
     const property = _.map(properties, 'property');
@@ -57,9 +58,9 @@ function processNestedSchemaDefinition(schema, name, config) {
         properties: schema.properties,
         required: schema.required,
     };
-    const processedDef = definitions_1.processDefinition(definition, `${name}`, config);
+    const processedDef = (0, definitions_1.processDefinition)(definition, `${name}`, config);
     const filename = path.join(config.dest, `${conf.modelFile}.ts`);
-    const exportDefiniton = definitions_1.createExport(processedDef.name);
+    const exportDefiniton = (0, definitions_1.createExport)(processedDef.name);
     fs.appendFileSync(filename, `${exportDefiniton}\n`);
     return processedDef;
 }

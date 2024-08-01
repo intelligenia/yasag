@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createForms = exports.getClassName = void 0;
 const _ = require("lodash");
 const path = require("path");
 const conf = require("../conf");
@@ -27,27 +28,27 @@ function createForms(config, name, processedMethods, definitions, readOnly) {
     const kebabName = _.kebabCase(name);
     const formBaseDir = path.join(config.dest, conf.storeDir);
     const formDirName = path.join(formBaseDir, `${kebabName}`);
-    utils_1.createDir(formDirName);
+    (0, utils_1.createDir)(formDirName);
     // Crerating each endpoint folder
     for (const processedMethod of processedMethods) {
         const paramGroups = processedMethod.paramGroups;
         const simpleName = processedMethod.simpleName;
         const formSubDirName = path.join(formBaseDir, `${kebabName}`, simpleName);
-        utils_1.createDir(formSubDirName);
+        (0, utils_1.createDir)(formSubDirName);
         let formParams = [];
         Object.values(paramGroups).forEach(params => {
             formParams = formParams.concat(params);
         });
         const className = name + getClassName(simpleName);
         // service.ts
-        generate_form_service_1.generateFormService(config, name, formParams, definitions, simpleName, formSubDirName, className, processedMethod.methodName, processedMethod, readOnly);
+        (0, generate_form_service_1.generateFormService)(config, name, formParams, definitions, simpleName, formSubDirName, className, processedMethod.methodName, processedMethod, readOnly);
         // module.ts
-        process_module_1.createModule(config, name, formSubDirName, simpleName, className);
+        (0, process_module_1.createModule)(config, name, formSubDirName, simpleName, className);
     }
     // form-shared-module.ts
-    shared_module_1.createSharedModule(config);
+    (0, shared_module_1.createSharedModule)(config);
     // form-module.ts
-    service_module_1.createServiceModule(config, name, processedMethods);
+    (0, service_module_1.createServiceModule)(config, name, processedMethods);
 }
 exports.createForms = createForms;
 //# sourceMappingURL=generate-form-modules.js.map

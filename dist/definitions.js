@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createExport = exports.processDefinition = exports.writeToBaseModelFile = exports.processDefinitions = void 0;
 /**
  * Processing of custom types from `definitions` section
  * in the schema
@@ -16,7 +17,7 @@ const utils_1 = require("./utils");
  * @param config global configuration
  */
 function processDefinitions(defs, config) {
-    utils_1.emptyDir(path.join(config.dest, conf.defsDir));
+    (0, utils_1.emptyDir)(path.join(config.dest, conf.defsDir));
     const definitions = [];
     const files = {};
     _.forOwn(defs, (v, source) => {
@@ -40,7 +41,7 @@ function processDefinitions(defs, config) {
 exports.processDefinitions = processDefinitions;
 function writeToBaseModelFile(config, allExports) {
     const filename = path.join(config.dest, `${conf.modelFile}.ts`);
-    utils_1.writeFile(filename, allExports, config.header);
+    (0, utils_1.writeFile)(filename, allExports, config.header);
 }
 exports.writeToBaseModelFile = writeToBaseModelFile;
 /**
@@ -52,10 +53,10 @@ exports.writeToBaseModelFile = writeToBaseModelFile;
 function processDefinition(def, name, config) {
     if (!isWritable(name))
         return;
-    name = common_1.normalizeDef(name);
+    name = (0, common_1.normalizeDef)(name);
     const nameModel = name;
     let output = '';
-    const properties = _.map(def.properties, (v, k) => common_1.processProperty(v, k, name, def.required, true, nameModel));
+    const properties = _.map(def.properties, (v, k) => (0, common_1.processProperty)(v, k, name, def.required, true, nameModel));
     // conditional import of global types
     if (properties.some(p => !p.native)) {
         output += `import * as __${conf.modelFile} from \'../${conf.modelFile}\';\n\n`;
@@ -63,14 +64,14 @@ function processDefinition(def, name, config) {
     if (def.description)
         output += `/** ${def.description} */\n`;
     output += `export interface ${name} {\n`;
-    output += utils_1.indent(_.map(properties, 'property').join('\n'));
+    output += (0, utils_1.indent)(_.map(properties, 'property').join('\n'));
     output += `\n}\n`;
     // concat non-empty enum lines
     const enumLines = _.map(properties, 'enumDeclaration').filter(Boolean).join('\n\n');
     if (enumLines)
         output += `\n${enumLines}\n`;
     const filename = path.join(config.dest, conf.defsDir, `${name}.ts`);
-    utils_1.writeFile(filename, output, config.header);
+    (0, utils_1.writeFile)(filename, output, config.header);
     return { name, def };
 }
 exports.processDefinition = processDefinition;

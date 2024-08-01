@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.processMethod = void 0;
 /**
  * Processing of custom types from `paths` section
  * in the schema
@@ -34,7 +35,7 @@ function processMethod(method, unwrapSingleParamMethods) {
         const paramDef = method.paramDef.filter((df) => allowed.includes(df.in));
         paramGroups = _.groupBy(paramDef, "in");
         const paramsType = _.upperFirst(`${method.simpleName}Params`);
-        const processedParams = process_params_1.processParams(paramDef, paramsType);
+        const processedParams = (0, process_params_1.processParams)(paramDef, paramsType);
         paramTypes = Object.keys(paramGroups);
         paramSeparation = getParamSeparation(paramGroups);
         paramsSignature = getParamsSignature(processedParams, paramsType);
@@ -49,7 +50,7 @@ function processMethod(method, unwrapSingleParamMethods) {
     }
     params = getRequestParams(paramTypes, method.methodName, method.responseDef.type, method.responseDef);
     methodDef += "\n";
-    methodDef += utils_1.makeComment([method.summary, method.description].filter(Boolean));
+    methodDef += (0, utils_1.makeComment)([method.summary, method.description].filter(Boolean));
     let responseType = method.responseDef.type;
     if (responseType === "string") {
         responseType = "";
@@ -60,7 +61,7 @@ function processMethod(method, unwrapSingleParamMethods) {
     }
     methodDef += `${method.simpleName}(${paramsSignature}): Observable<${observableType}> {\n`;
     // apply the param definitions, e.g. bodyParams
-    methodDef += utils_1.indent(paramSeparation);
+    methodDef += (0, utils_1.indent)(paramSeparation);
     if (paramSeparation.length)
         methodDef += "\n";
     /* tslint:disable-next-line:max-line-length */
@@ -69,7 +70,7 @@ function processMethod(method, unwrapSingleParamMethods) {
         template = "";
     }
     const body = `return this.http.${method.methodName}${template}(this.apiConfigService.options.apiUrl + \`${method.basePath}${url}\`${params});`;
-    methodDef += utils_1.indent(body);
+    methodDef += (0, utils_1.indent)(body);
     methodDef += `\n`;
     methodDef += `}`;
     methodDef += splitParamsMethod;
@@ -97,7 +98,7 @@ function getSplitParamsMethod(method, processedParams) {
     const splitParamsSignature = getSplitParamsSignature(processedParams);
     splitParamsMethod += `\n${method.simpleName}_(${splitParamsSignature}): Observable<${method.responseDef.type}> {\n`;
     const propAssignments = getPropertyAssignments(method.paramDef);
-    splitParamsMethod += utils_1.indent(`return this.${method.simpleName}(${propAssignments});\n`);
+    splitParamsMethod += (0, utils_1.indent)(`return this.${method.simpleName}(${propAssignments});\n`);
     splitParamsMethod += "}\n";
     return splitParamsMethod;
 }
@@ -133,7 +134,7 @@ function getParamSeparation(paramGroups) {
         let def;
         if (groupName === "query") {
             const list = _.map(group, (p) => `${p.name}: params.${p.name},`);
-            baseDef = "{\n" + utils_1.indent(list) + "\n};";
+            baseDef = "{\n" + (0, utils_1.indent)(list) + "\n};";
             def = `const queryParamBase = ${baseDef}\n\n`;
             def += `let queryParams = __utils.getQueryParams(queryParamBase);\n`;
             return def;
@@ -145,7 +146,7 @@ function getParamSeparation(paramGroups) {
             }
             else {
                 const list = _.map(group, (p) => `${p.name}: params.${p.name},`);
-                def = "{\n" + utils_1.indent(list) + "\n};";
+                def = "{\n" + (0, utils_1.indent)(list) + "\n};";
             }
             // bodyParams keys with value === undefined are removed
             let res = `const ${groupName}Params = ${def}\n`;
@@ -155,7 +156,7 @@ function getParamSeparation(paramGroups) {
         }
         else {
             const list = _.map(group, (p) => `${p.name}: params.${p.name},`);
-            def = "{\n" + utils_1.indent(list) + "\n};";
+            def = "{\n" + (0, utils_1.indent)(list) + "\n};";
         }
         return `const ${groupName}Params = ${def}`;
     });

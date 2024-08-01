@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.generate = void 0;
 /** Generator of API models (interfaces) from BE API json */
 const fs = require("fs");
 const conf = require("./conf");
@@ -28,11 +29,11 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
     }
     catch (e) {
         if (e instanceof SyntaxError) {
-            utils_1.out(`${src} is either not a valid JSON scheme or contains non-printable characters`, utils_1.TermColors.red);
+            (0, utils_1.out)(`${src} is either not a valid JSON scheme or contains non-printable characters`, utils_1.TermColors.red);
         }
         else
-            utils_1.out(`JSON scheme file '${src}' does not exist`, utils_1.TermColors.red);
-        utils_1.out(`${e}`);
+            (0, utils_1.out)(`JSON scheme file '${src}' does not exist`, utils_1.TermColors.red);
+        (0, utils_1.out)(`${e}`);
         return;
     }
     // normalize basePath, strip trailing '/'s
@@ -46,7 +47,7 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
         schema.basePath = "";
     }
     recreateDirectories(dest, generateStore);
-    const header = utils_1.processHeader(schema, omitVersion, omitHeader);
+    const header = (0, utils_1.processHeader)(schema, omitVersion, omitHeader);
     const config = {
         header,
         dest,
@@ -56,17 +57,17 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
     };
     if (!fs.existsSync(dest))
         fs.mkdirSync(dest);
-    const definitions = definitions_1.processDefinitions(schema.definitions, config);
-    process_paths_1.processPaths(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`, config, definitions, schema.basePath, environmentAPI, readOnly, environmentCache);
+    const definitions = (0, definitions_1.processDefinitions)(schema.definitions, config);
+    (0, process_paths_1.processPaths)(schema.paths, `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`, config, definitions, schema.basePath, environmentAPI, readOnly, environmentCache);
 }
 exports.generate = generate;
 function recreateDirectories(dest, generateStore) {
-    utils_1.emptyDir(path.join(dest, conf.defsDir), true);
-    utils_1.emptyDir(path.join(dest, conf.apiDir), true);
-    utils_1.emptyDir(path.join(dest, conf.storeDir), true);
-    utils_1.createDir(path.join(dest, conf.defsDir));
-    utils_1.createDir(path.join(dest, conf.apiDir));
+    (0, utils_1.emptyDir)(path.join(dest, conf.defsDir), true);
+    (0, utils_1.emptyDir)(path.join(dest, conf.apiDir), true);
+    (0, utils_1.emptyDir)(path.join(dest, conf.storeDir), true);
+    (0, utils_1.createDir)(path.join(dest, conf.defsDir));
+    (0, utils_1.createDir)(path.join(dest, conf.apiDir));
     if (generateStore)
-        utils_1.createDir(path.join(dest, conf.storeDir));
+        (0, utils_1.createDir)(path.join(dest, conf.storeDir));
 }
 //# sourceMappingURL=generate.js.map

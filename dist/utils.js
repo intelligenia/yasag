@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.out = exports.TermColors = exports.processHeader = exports.makeComment = exports.writeFile = exports.indent = exports.emptyDir = exports.createDir = void 0;
 const fs = require("fs");
 const conf = require("./conf");
 /**

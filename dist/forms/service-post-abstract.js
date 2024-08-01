@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createServicePostAbstractClass = void 0;
 const path = require("path");
 const conf = require("../conf");
 const utils_1 = require("../utils");
@@ -9,12 +10,14 @@ const utils_1 = require("../utils");
  */
 function createServicePostAbstractClass(config) {
     const content = `
-  import { FormGroup } from '@angular/forms';
+  import { AbstractControl, FormGroup } from '@angular/forms';
   import { NgZone } from '@angular/core';
   import { ReplaySubject, Observable, throwError } from 'rxjs';
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
   import { APIConfigService } from '../apiconfig.service';
+
+  export type ValueOfForm<T extends AbstractControl> = ReturnType<T["getRawValue"]>;
 
   export abstract class YASAGPostFormService<Type> {
     defaultValue: any;
@@ -198,7 +201,7 @@ function createServicePostAbstractClass(config) {
 
   }`;
     const classFileName = path.join(config.dest, conf.storeDir, `yasag-post.service.ts`);
-    utils_1.writeFile(classFileName, content, config.header);
+    (0, utils_1.writeFile)(classFileName, content, config.header);
 }
 exports.createServicePostAbstractClass = createServicePostAbstractClass;
 //# sourceMappingURL=service-post-abstract.js.map

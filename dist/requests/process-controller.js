@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.processController = void 0;
 /**
  * Processing of custom types from `paths` section
  * in the schema
@@ -31,10 +32,10 @@ function processController(methods, name, config, definitions, readOnly) {
                 .replace(/([A-Z])/g, "-$1");
             controller.simpleName = _.lowerFirst(_.camelCase(preserveCapitals));
         }
-        controller.responseDef = process_responses_1.processResponses(controller.responses, name + _.upperFirst(controller.simpleName), config);
+        controller.responseDef = (0, process_responses_1.processResponses)(controller.responses, name + _.upperFirst(controller.simpleName), config);
         usesGlobalType = usesGlobalType || controller.responseDef.usesGlobalType;
     });
-    const processedMethods = methods.map((m) => process_method_1.processMethod(m, config.unwrapSingleParamMethods));
+    const processedMethods = methods.map((m) => (0, process_method_1.processMethod)(m, config.unwrapSingleParamMethods));
     usesGlobalType =
         usesGlobalType || processedMethods.some((c) => c.usesGlobalType);
     let content = "";
@@ -59,20 +60,20 @@ function processController(methods, name, config, definitions, readOnly) {
     }
     content += `@Injectable()\n`;
     content += `export class ${name}Service {\n`;
-    content += utils_1.indent("constructor(\n");
-    content += utils_1.indent("private http: HttpClient,\n", 2);
-    content += utils_1.indent("private apiConfigService: APIConfigService) {}\n", 2);
+    content += (0, utils_1.indent)("constructor(\n");
+    content += (0, utils_1.indent)("private http: HttpClient,\n", 2);
+    content += (0, utils_1.indent)("private apiConfigService: APIConfigService) {}\n", 2);
     content += "\n";
-    content += utils_1.indent(_.map(processedMethods, "methodDef").join("\n\n"));
+    content += (0, utils_1.indent)(_.map(processedMethods, "methodDef").join("\n\n"));
     content += "\n}\n";
     if (conf.adHocExceptions.api[name]) {
         content = content.replace(conf.adHocExceptions.api[name][0], conf.adHocExceptions.api[name][1]);
     }
     /* controllers */
-    utils_1.writeFile(filename, content, config.header);
+    (0, utils_1.writeFile)(filename, content, config.header);
     /* forms */
     if (config.generateStore) {
-        generate_form_modules_1.createForms(config, name, processedMethods, definitions, readOnly);
+        (0, generate_form_modules_1.createForms)(config, name, processedMethods, definitions, readOnly);
     }
 }
 exports.processController = processController;

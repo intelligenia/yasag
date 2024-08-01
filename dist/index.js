@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const commander = require("commander");
 const conf = require("./conf");
 const generate_1 = require("./generate");
-commander
+const { program } = require("commander");
+program
     .option("-s, --src <source>", `Source directory, default: ${conf.apiFile}`)
     .option("-d, --dest <destination>", `Destination directory, default: ${conf.outDir}`)
     .option("--no-store", "Do not generate store")
@@ -19,5 +19,5 @@ commander
     .option("-r, --read-only <ending>", `Omit attributes ending by <ending> in PUT, POST and PATCH methods, default: None`)
     .option("-c, --environment-cache <environmentCache>", `Name of the environment variable for the cache size configuration, default name: ${conf.environmentCache}, default size 1000 elements`)
     .parse(process.argv);
-generate_1.generate(commander.src, commander.dest, commander.store, commander.unwrapSingleParamMethods, commander.swaggerUrlPath, commander.omitVersion, commander.omitBasepath, commander.environmentVar, commander.omitHeader, commander.typedForms, commander.readOnly, commander.environmentCache);
+(0, generate_1.generate)(program.src, program.dest, program.store, program.unwrapSingleParamMethods, program.swaggerUrlPath, program.omitVersion, program.omitBasepath, program.environmentVar, program.omitHeader, program.typedForms, program.readOnly, program.environmentCache);
 //# sourceMappingURL=index.js.map

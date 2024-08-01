@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createFormsModule = void 0;
 const path = require("path");
 const conf = require("../conf");
 const utils_1 = require("../utils");
@@ -19,20 +20,20 @@ function createFormsModule(config, modules) {
     }
     content += '\n';
     content += '@NgModule({\n';
-    content += utils_1.indent('imports: [\n');
+    content += (0, utils_1.indent)('imports: [\n');
     for (const module of modules) {
-        content += utils_1.indent(`${module}FormModule,\n`, 2);
+        content += (0, utils_1.indent)(`${module}FormModule,\n`, 2);
     }
-    content += utils_1.indent('],\n');
-    content += utils_1.indent('exports: [\n');
+    content += (0, utils_1.indent)('],\n');
+    content += (0, utils_1.indent)('exports: [\n');
     for (const module of modules) {
-        content += utils_1.indent(`${module}FormModule,\n`, 2);
+        content += (0, utils_1.indent)(`${module}FormModule,\n`, 2);
     }
-    content += utils_1.indent('],\n');
+    content += (0, utils_1.indent)('],\n');
     content += '})\n';
     content += `export class ApiFormsModule {}\n`;
     const moduleFileName = path.join(config.dest, conf.storeDir, `apiforms.module.ts`);
-    utils_1.writeFile(moduleFileName, content, config.header);
+    (0, utils_1.writeFile)(moduleFileName, content, config.header);
 }
 exports.createFormsModule = createFormsModule;
 //# sourceMappingURL=forms-module.js.map

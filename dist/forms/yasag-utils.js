@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createUtils = void 0;
 const path = require("path");
 const utils_1 = require("../utils");
 /**
@@ -67,7 +68,7 @@ function createUtils(config) {
   }
   `;
     const classFileName = path.join(config.dest, `yasag-utils.ts`);
-    utils_1.writeFile(classFileName, content, config.header);
+    (0, utils_1.writeFile)(classFileName, content, config.header);
 }
 exports.createUtils = createUtils;
 //# sourceMappingURL=yasag-utils.js.map

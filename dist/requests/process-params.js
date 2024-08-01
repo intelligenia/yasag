@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parameterToSchema = exports.processParams = void 0;
 /**
  * Processing of custom types from `paths` section
  * in the schema
@@ -16,10 +17,10 @@ function processParams(def, paramsType) {
     let paramDef = "";
     let typesOnly = "";
     paramDef += `export interface ${paramsType} {\n`;
-    const params = _.map(def, (p) => common_1.processProperty(parameterToSchema(p), p.name, paramsType, p.required));
+    const params = _.map(def, (p) => (0, common_1.processProperty)(parameterToSchema(p), p.name, paramsType, p.required));
     const isInterfaceEmpty = !params.length;
     const usesGlobalType = params.some((p) => !p.native);
-    paramDef += utils_1.indent(_.map(params, "property"));
+    paramDef += (0, utils_1.indent)(_.map(params, "property"));
     paramDef += `\n`;
     paramDef += `}\n`;
     const enums = _.map(params, "enumDeclaration").filter(Boolean);

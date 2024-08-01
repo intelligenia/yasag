@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.processPaths = void 0;
 /**
  * Processing of custom types from `paths` section
  * in the schema
@@ -44,24 +45,24 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     })));
     const controllerFiles = _.groupBy(controllers, "name");
     conf.controllerIgnores.forEach((key) => delete controllerFiles[key]);
-    _.forEach(controllerFiles, (methods, name) => process_controller_1.processController(methods, name.replace("[", "").replace("]", ""), config, definitions, readOnly));
+    _.forEach(controllerFiles, (methods, name) => (0, process_controller_1.processController)(methods, name.replace("[", "").replace("]", ""), config, definitions, readOnly));
     const modules = [];
     _.forEach(_.groupBy(controllers, "name"), (_methods, name) => {
         modules.push(name);
     });
     // Create global module for forms
-    forms_module_1.createFormsModule(config, modules);
+    (0, forms_module_1.createFormsModule)(config, modules);
     // Create the abstract class
-    service_get_abstract_1.createServiceGetAbstractClass(config);
-    service_post_abstract_1.createServicePostAbstractClass(config);
+    (0, service_get_abstract_1.createServiceGetAbstractClass)(config);
+    (0, service_post_abstract_1.createServicePostAbstractClass)(config);
     // Create utils
-    yasag_utils_1.createUtils(config);
+    (0, yasag_utils_1.createUtils)(config);
     let content = "";
     controllers.forEach((method) => (content += `export * from './forms/${_.kebabCase(method.name)}/${method.simpleName}/${method.simpleName}.service';\n`));
     const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
-    utils_1.writeFile(allFormServiceFileName, content, config.header);
+    (0, utils_1.writeFile)(allFormServiceFileName, content, config.header);
     // apiconfig.service.ts
-    config_service_1.createConfigService(config, environmentAPI, environmentCache);
+    (0, config_service_1.createConfigService)(config, environmentAPI, environmentCache);
 }
 exports.processPaths = processPaths;
 /**

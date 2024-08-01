@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.adHocExceptions = exports.controllerIgnores = exports.allowedParams = exports.nativeTypes = exports.swaggerFile = exports.typeForms = exports.omitHeader = exports.environmentCache = exports.environmentAPI = exports.omitBasepath = exports.omitVersion = exports.swaggerUrlPath = exports.indentation = exports.modelFile = exports.apiFile = exports.stateDir = exports.storeDir = exports.apiDir = exports.defsDir = exports.outDir = void 0;
 // relative to project root
 exports.outDir = "src/api";
 exports.defsDir = "defs";

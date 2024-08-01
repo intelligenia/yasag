@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import * as commander from "commander";
 
 import * as conf from "./conf";
 import { generate } from "./generate";
 
-commander
+const { program } = require("commander");
+
+program
   .option("-s, --src <source>", `Source directory, default: ${conf.apiFile}`)
   .option(
     "-d, --dest <destination>",
@@ -48,16 +49,16 @@ commander
   .parse(process.argv);
 
 generate(
-  commander.src,
-  commander.dest,
-  commander.store,
-  commander.unwrapSingleParamMethods,
-  commander.swaggerUrlPath,
-  commander.omitVersion,
-  commander.omitBasepath,
-  commander.environmentVar,
-  commander.omitHeader,
-  commander.typedForms,
-  commander.readOnly,
-  commander.environmentCache
+  program.src,
+  program.dest,
+  program.store,
+  program.unwrapSingleParamMethods,
+  program.swaggerUrlPath,
+  program.omitVersion,
+  program.omitBasepath,
+  program.environmentVar,
+  program.omitHeader,
+  program.typedForms,
+  program.readOnly,
+  program.environmentCache
 );
