@@ -9,12 +9,14 @@ import { writeFile } from "../utils";
  */
 export function createServicePostAbstractClass(config: Config) {
   const content = `
-  import { FormGroup } from '@angular/forms';
+  import { AbstractControl, FormGroup } from '@angular/forms';
   import { NgZone } from '@angular/core';
   import { ReplaySubject, Observable, throwError } from 'rxjs';
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
   import { APIConfigService } from '../apiconfig.service';
+
+  export type ValueOfForm<T extends AbstractControl> = ReturnType<T["getRawValue"]>;
 
   export abstract class YASAGPostFormService<Type> {
     defaultValue: any;
