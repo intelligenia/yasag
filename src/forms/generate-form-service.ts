@@ -38,24 +38,22 @@ export function generateFormService(
 
   out(`Generating ${componentHTMLFileName}`, TermColors.default);
 
-  const form = getForm(
-    formName,
+  const constructor = getConstructor(
+    name,
+    className,
     definitions,
     params,
+    formName,
     formArrayReset,
     formArrayPatch,
     readOnly,
     config
   );
-  const constructor = getConstructor(name, className);
 
   const variables = getVariables(method);
 
   // Imports
   content += getImports(name, constructor, methodName);
-
-  // Form type
-  content += `type FormValue = ValueOfForm<${className}FormService["form"]>;`;
 
   // Class declaration
   content += `@Injectable()\n`;
@@ -72,8 +70,6 @@ export function generateFormService(
   // Class variables
 
   content += variables;
-
-  content += form;
 
   // Constructor and add & remove form methods
   content += constructor;
@@ -115,8 +111,7 @@ function getImports(name: string, constructor: string, methodName: string) {
   res += "import * as __utils from '../../../yasag-utils';\n\n";
 
   if (methodName === "get") {
-    res +=
-      "import { ValueOfForm, YASAGGetFormService } from '../../yasag-get.service';\n\n";
+    res += "import { YASAGGetFormService } from '../../yasag-get.service';\n\n";
   } else {
     res +=
       "import { YASAGPostFormService } from '../../yasag-post.service';\n\n";
@@ -142,33 +137,12 @@ function getVariables(method: MethodOutput): string {
   return content;
 }
 
-function getConstructor(name: string, className: string) {
-  const formArrayMethods: string[] = [];
-
-  let res = indent("constructor(\n");
-  res += indent(`apiConfigService: APIConfigService,\n`, 2);
-  res += indent(`ngZone: NgZone,\n`, 2);
-  res += indent(`private service: ${name}Service,\n`, 2);
-  res += indent(") {\n");
-
-  res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
-
-  res += indent(`this.init();\n`, 2);
-  res += indent("}\n");
-  res += "\n";
-
-  for (const method in formArrayMethods) {
-    res += formArrayMethods[method];
-    res += "\n";
-  }
-
-  return res;
-}
-
-function getForm(
-  formName: string,
+function getConstructor(
+  name: string,
+  className: string,
   definitions: ProcessedDefinition[],
   params: Parameter[],
+  formName: string,
   formArrayReset: string[],
   formArrayPatch: string[],
   readOnly: string,
@@ -192,7 +166,28 @@ function getForm(
     config
   );
 
-  return indent(`${formName} = new FormGroup({\n${formDefinition}\n});\n`, 1);
+  let res = indent(
+    `${formName} = new FormGroup({\n${formDefinition}\n});\n`,
+    1
+  );
+  res += indent("constructor(\n");
+  res += indent(`apiConfigService: APIConfigService,\n`, 2);
+  res += indent(`ngZone: NgZone,\n`, 2);
+  res += indent(`private service: ${name}Service,\n`, 2);
+  res += indent(") {\n");
+
+  res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
+
+  res += indent(`this.init();\n`, 2);
+  res += indent("}\n");
+  res += "\n";
+
+  for (const method in formArrayMethods) {
+    res += formArrayMethods[method];
+    res += "\n";
+  }
+
+  return res;
 }
 
 function walkParamOrProp(
@@ -486,7 +481,7 @@ function makeField(
         }
       }
     } else {
-      let isNullable = nullable ? " | null" : " | undefined";
+      let isNullable = nullable ? " | null" : "";
       control = "FormControl";
       if (config.typedForms) {
         control += `<${type}${isNullable}>`;
@@ -571,11 +566,11 @@ function getFormSubmitFunction(
 
   if (methodName === "get") {
     res += indent(
-      `submit(value: FormValue | false = false, cache = true, only_cache = false): Observable<${type}> {\n`
+      `submit(value: typeof this.form.value | false = false, cache = true, only_cache = false): Observable<${type}> {\n`
     );
   } else {
     res += indent(
-      `submit(value: FormValue | false = false): Observable<${type}> {\n`
+      `submit(value: typeof this.form.value | false = false): Observable<${type}> {\n`
     );
   }
 
@@ -603,7 +598,7 @@ function getFormSubmitFunction(
   res += indent("\n\n");
 
   res += indent(
-    `listen(value: FormValue | false = false, submit: boolean = true): Observable<${type}> {\n`
+    `listen(value: typeof this.form.value | false = false, submit: boolean = true): Observable<${type}> {\n`
   );
 
   res += indent("if (submit) {\n", 2);
@@ -629,7 +624,7 @@ function getFormResetFunction(
 ) {
   let res = "";
 
-  res += indent("reset(value?: FormValue): void {\n");
+  res += indent("reset(value?: typeof this.form.value): void {\n");
   res += indent(`this.form.reset();\n`, 2);
   for (const i in formArrayReset) {
     res += indent(formArrayReset[i]);
@@ -637,7 +632,7 @@ function getFormResetFunction(
   res += indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
   res += indent("}\n\n");
 
-  res += indent("patch(value: FormValue): void {\n");
+  res += indent("patch(value: typeof this.form.value): void {\n");
   for (const i in formArrayPatch) {
     res += indent(formArrayPatch[i]);
   }

@@ -19,5 +19,6 @@ program
     .option("-r, --read-only <ending>", `Omit attributes ending by <ending> in PUT, POST and PATCH methods, default: None`)
     .option("-c, --environment-cache <environmentCache>", `Name of the environment variable for the cache size configuration, default name: ${conf.environmentCache}, default size 1000 elements`)
     .parse(process.argv);
-(0, generate_1.generate)(program.src, program.dest, program.store, program.unwrapSingleParamMethods, program.swaggerUrlPath, program.omitVersion, program.omitBasepath, program.environmentVar, program.omitHeader, program.typedForms, program.readOnly, program.environmentCache);
+const options = program.opts();
+(0, generate_1.generate)(options.src, options.dest, options.store, options.unwrapSingleParamMethods, options.swaggerUrlPath, options.omitVersion, options.omitBasepath, options.environmentVar, options.omitHeader, options.typedForms, options.readOnly, options.environmentCache);
 //# sourceMappingURL=index.js.map

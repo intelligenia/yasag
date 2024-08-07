@@ -13,7 +13,7 @@ const utils_1 = require("./utils");
  * @param exportEnums
  * @param nameModel
  */
-function processProperty(prop, name = '', namespace = '', required = false, exportEnums = true, nameModel = "") {
+function processProperty(prop, name = "", namespace = "", required = false, exportEnums = true, nameModel = "") {
     let type;
     let enumDeclaration;
     let native = true;
@@ -22,12 +22,19 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
         // file added to make the enum globally unique
         type += _.upperFirst(namespace);
         if (!type.match(/Enum/))
-            type += 'Enum';
+            type += "Enum";
         const list = prop.enum || prop.items.enum;
-        const exp = exportEnums ? 'export ' : '';
-        enumDeclaration = `${exp}type ${type} =\n` + (0, utils_1.indent)('\'' + list.join('\' |\n\'')) + '\';';
-        if (prop.type === 'array')
-            type += '[]';
+        const exp = exportEnums ? "export " : "";
+        if (prop.type === "integer") {
+            enumDeclaration =
+                `${exp}type ${type} =\n` + (0, utils_1.indent)(list.join(" |\n")) + ";";
+        }
+        else {
+            enumDeclaration =
+                `${exp}type ${type} =\n` + (0, utils_1.indent)("'" + list.join("' |\n'")) + "';";
+        }
+        if (prop.type === "array")
+            type += "[]";
     }
     else {
         let defType;
@@ -36,7 +43,7 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
                 defType = translateType(prop.$ref);
                 type = defType.type;
                 break;
-            case 'array':
+            case "array":
                 defType = translateType(prop.items.type || prop.items.$ref);
                 if (defType.arraySimple)
                     type = `${defType.type}[]`;
@@ -47,13 +54,12 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
                 if (prop.additionalProperties) {
                     const ap = prop.additionalProperties;
                     let additionalType;
-                    if (ap.type === 'array') {
+                    if (ap.type === "array") {
                         defType = translateType(ap.items.type || ap.items.$ref);
                         additionalType = `${defType.type}[]`;
                     }
                     else {
-                        defType = translateType(prop.additionalProperties.type ||
-                            prop.additionalProperties.$ref);
+                        defType = translateType(prop.additionalProperties.type || prop.additionalProperties.$ref);
                         additionalType = defType.type;
                     }
                     type = `{[key: string]: ${additionalType}}`;
@@ -65,16 +71,16 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
         }
         native = defType.native;
     }
-    if (type.indexOf('Recursive') > 0)
-        if (type.indexOf('[]') > 0)
+    if (type.indexOf("Recursive") > 0)
+        if (type.indexOf("[]") > 0)
             type = nameModel + "[]";
         else
             type = nameModel;
-    let optional = '';
+    let optional = "";
     if (required === false)
-        optional = '?';
+        optional = "?";
     else if (Array.isArray(required) && !required.includes(name)) {
-        optional = '?';
+        optional = "?";
     }
     const comments = [];
     if (prop.description)
@@ -100,7 +106,14 @@ function processProperty(prop, name = '', namespace = '', required = false, expo
         propertyAsMethodParameter = property;
     }
     const format = prop.format;
-    return { property, format, propertyAsMethodParameter, enumDeclaration, native, isRequired: optional !== '?' };
+    return {
+        property,
+        format,
+        propertyAsMethodParameter,
+        enumDeclaration,
+        native,
+        isRequired: optional !== "?",
+    };
 }
 exports.processProperty = processProperty;
 /**
@@ -112,8 +125,8 @@ exports.processProperty = processProperty;
  * @return normalized type name
  */
 function normalizeDef(type) {
-    type = type.replace('[', '').replace(']', '');
-    let res = '';
+    type = type.replace("[", "").replace("]", "");
+    let res = "";
     while (true) {
         const generic = type.match(/([^«]+)«(.+)»/);
         if (!generic) {
@@ -124,7 +137,7 @@ function normalizeDef(type) {
     }
     res = type + res;
     res = res.trim();
-    res = res.replace(/\./g, ' ');
+    res = res.replace(/\./g, " ");
     if (res.match(/ /)) {
         res = _.camelCase(res);
     }
@@ -145,18 +158,18 @@ function translateType(type) {
             arraySimple: true,
         };
     }
-    type = type.replace('[', '').replace(']', '');
+    type = type.replace("[", "").replace("]", "");
     const subtype = type.match(/^#\/definitions\/(.*)/);
     if (subtype) {
         const generic = subtype[1].match(/([^«]+)«(.+)»/);
         // collection translates to array
-        if (generic && generic[1] === 'Collection') {
+        if (generic && generic[1] === "Collection") {
             const resolvedType = resolveDefType(generic[2]);
-            resolvedType.type += '[]';
+            resolvedType.type += "[]";
             return resolvedType;
         }
-        else if (generic && generic[1] === 'Map') {
-            const map = generic[2].split(',');
+        else if (generic && generic[1] === "Map") {
+            const map = generic[2].split(",");
             const record = `Record<${map[0]}, ${map[1]}>`;
             return { type: record, native: true, arraySimple: false };
         }

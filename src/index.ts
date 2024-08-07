@@ -48,17 +48,19 @@ program
   )
   .parse(process.argv);
 
+const options = program.opts();
+
 generate(
-  program.src,
-  program.dest,
-  program.store,
-  program.unwrapSingleParamMethods,
-  program.swaggerUrlPath,
-  program.omitVersion,
-  program.omitBasepath,
-  program.environmentVar,
-  program.omitHeader,
-  program.typedForms,
-  program.readOnly,
-  program.environmentCache
+  options.src,
+  options.dest,
+  options.store,
+  options.unwrapSingleParamMethods,
+  options.swaggerUrlPath,
+  options.omitVersion,
+  options.omitBasepath,
+  options.environmentVar,
+  options.omitHeader,
+  options.typedForms,
+  options.readOnly,
+  options.environmentCache
 );

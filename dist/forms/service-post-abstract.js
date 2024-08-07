@@ -17,8 +17,6 @@ function createServicePostAbstractClass(config) {
   import { environment } from 'environments/environment';
   import { APIConfigService } from '../apiconfig.service';
 
-  export type ValueOfForm<T extends AbstractControl> = ReturnType<T["getRawValue"]>;
-
   export abstract class YASAGPostFormService<Type> {
     defaultValue: any;
     serverErrors$: Observable<any>;
