@@ -58,7 +58,12 @@ function processController(methods, name, config, definitions, readOnly) {
         content += interfaceDef;
         content += "\n";
     }
-    content += `@Injectable()\n`;
+    if (config.standalone) {
+        content += `@Injectable({ providedIn: 'root' })\n`;
+    }
+    else {
+        content += `@Injectable()\n`;
+    }
     content += `export class ${name}Service {\n`;
     content += (0, utils_1.indent)("constructor(\n");
     content += (0, utils_1.indent)("private http: HttpClient,\n", 2);

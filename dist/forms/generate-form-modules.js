@@ -43,12 +43,16 @@ function createForms(config, name, processedMethods, definitions, readOnly) {
         // service.ts
         (0, generate_form_service_1.generateFormService)(config, name, formParams, definitions, simpleName, formSubDirName, className, processedMethod.methodName, processedMethod, readOnly);
         // module.ts
-        (0, process_module_1.createModule)(config, name, formSubDirName, simpleName, className);
+        if (!config.standalone) {
+            (0, process_module_1.createModule)(config, name, formSubDirName, simpleName, className);
+        }
     }
-    // form-shared-module.ts
-    (0, shared_module_1.createSharedModule)(config);
-    // form-module.ts
-    (0, service_module_1.createServiceModule)(config, name, processedMethods);
+    if (!config.standalone) {
+        // form-shared-module.ts
+        (0, shared_module_1.createSharedModule)(config);
+        // form-module.ts
+        (0, service_module_1.createServiceModule)(config, name, processedMethods);
+    }
 }
 exports.createForms = createForms;
 //# sourceMappingURL=generate-form-modules.js.map

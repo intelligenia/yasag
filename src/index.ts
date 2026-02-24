@@ -50,6 +50,10 @@ program
     "-a, --clean-architecture",
     "Generate clean architecture layers (domain, data, usecases)"
   )
+  .option(
+    "--standalone",
+    "Generate standalone-compatible code for Angular 17+ (providedIn: 'root', no NgModules)"
+  )
   .parse(process.argv);
 
 const options = program.opts();
@@ -67,5 +71,6 @@ generate(
   options.typedForms,
   options.readOnly,
   options.environmentCache,
-  options.cleanArchitecture
+  options.cleanArchitecture,
+  options.standalone
 );

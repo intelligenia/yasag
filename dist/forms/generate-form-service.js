@@ -17,9 +17,14 @@ function generateFormService(config, name, params, definitions, simpleName, form
     const constructor = getConstructor(name, className, definitions, params, formName, formArrayReset, formArrayPatch, readOnly, config);
     const variables = getVariables(method);
     // Imports
-    content += getImports(name, constructor, methodName);
+    content += getImports(name, constructor, methodName, config);
     // Class declaration
-    content += `@Injectable()\n`;
+    if (config.standalone) {
+        content += `@Injectable({ providedIn: 'root' })\n`;
+    }
+    else {
+        content += `@Injectable()\n`;
+    }
     let observableType = method.responseDef.type;
     if (observableType === "string" && method.responseDef.format === "binary") {
         observableType = "Blob";
@@ -43,7 +48,7 @@ function generateFormService(config, name, params, definitions, simpleName, form
     (0, utils_1.writeFile)(componentHTMLFileName, content, config.header);
 }
 exports.generateFormService = generateFormService;
-function getImports(name, constructor, methodName) {
+function getImports(name, constructor, methodName, config) {
     const imports = [];
     if (constructor.match(/new FormArray\(/))
         imports.push("FormArray");
@@ -55,6 +60,25 @@ function getImports(name, constructor, methodName) {
         imports.push("FormGroup");
     if (constructor.match(/\[Validators\./))
         imports.push("Validators");
+    if (config.standalone) {
+        let res = "import { Injectable, inject, NgZone } from '@angular/core';\n";
+        if (imports.length)
+            res += `import {${imports.join(", ")}} from '@angular/forms';\n`;
+        res += "import {  Observable } from 'rxjs';\n";
+        res += `import { ${name}Service } from '../../../controllers/${name}';\n`;
+        res += `import * as __model from '../../../model';\n`;
+        res += "import { APIConfigService } from '../../../apiconfig.service';\n\n";
+        res += "import * as __utils from '../../../yasag-utils';\n\n";
+        if (methodName === "get") {
+            res += "import { YASAGGetFormService } from '../../yasag-get.service';\n\n";
+        }
+        else {
+            res +=
+                "import { YASAGPostFormService } from '../../yasag-post.service';\n\n";
+        }
+        res += "\n";
+        return res;
+    }
     let res = "import { Injectable, NgZone } from '@angular/core';\n";
     if (imports.length)
         res += `import {${imports.join(", ")}} from '@angular/forms';\n`;
@@ -106,14 +130,26 @@ function getConstructor(name, className, definitions, params, formName, formArra
     };
     const formDefinition = walkParamOrProp(params, undefined, ctx);
     let res = (0, utils_1.indent)(`${formName} = new FormGroup({\n${formDefinition}\n});\n`, 1);
-    res += (0, utils_1.indent)("constructor(\n");
-    res += (0, utils_1.indent)(`apiConfigService: APIConfigService,\n`, 2);
-    res += (0, utils_1.indent)(`ngZone: NgZone,\n`, 2);
-    res += (0, utils_1.indent)(`private service: ${name}Service,\n`, 2);
-    res += (0, utils_1.indent)(") {\n");
-    res += (0, utils_1.indent)(`super('${className}', apiConfigService, ngZone);\n`, 2);
-    res += (0, utils_1.indent)(`this.init();\n`, 2);
-    res += (0, utils_1.indent)("}\n");
+    if (config.standalone) {
+        res += (0, utils_1.indent)("constructor(\n");
+        res += (0, utils_1.indent)(`private service: ${name}Service,\n`, 2);
+        res += (0, utils_1.indent)(") {\n");
+        res += (0, utils_1.indent)(`const apiConfigService = inject(APIConfigService);\n`, 2);
+        res += (0, utils_1.indent)(`const ngZone = inject(NgZone, { optional: true });\n`, 2);
+        res += (0, utils_1.indent)(`super('${className}', apiConfigService, ngZone);\n`, 2);
+        res += (0, utils_1.indent)(`this.init();\n`, 2);
+        res += (0, utils_1.indent)("}\n");
+    }
+    else {
+        res += (0, utils_1.indent)("constructor(\n");
+        res += (0, utils_1.indent)(`apiConfigService: APIConfigService,\n`, 2);
+        res += (0, utils_1.indent)(`ngZone: NgZone,\n`, 2);
+        res += (0, utils_1.indent)(`private service: ${name}Service,\n`, 2);
+        res += (0, utils_1.indent)(") {\n");
+        res += (0, utils_1.indent)(`super('${className}', apiConfigService, ngZone);\n`, 2);
+        res += (0, utils_1.indent)(`this.init();\n`, 2);
+        res += (0, utils_1.indent)("}\n");
+    }
     res += "\n";
     for (const method of formArrayMethods) {
         res += method;

@@ -89,7 +89,9 @@ export function processPaths(
     modules.push(name);
   });
   // Create global module for forms
-  createFormsModule(config, modules);
+  if (!config.standalone) {
+    createFormsModule(config, modules);
+  }
   // Create the abstract class
   createServiceGetAbstractClass(config);
   createServicePostAbstractClass(config);

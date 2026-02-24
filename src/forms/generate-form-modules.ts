@@ -67,10 +67,14 @@ export function createForms(
       readOnly,
     );
     // module.ts
-    createModule(config, name, formSubDirName, simpleName, className);
+    if (!config.standalone) {
+      createModule(config, name, formSubDirName, simpleName, className);
+    }
   }
-  // form-shared-module.ts
-  createSharedModule(config);
-  // form-module.ts
-  createServiceModule(config, name, processedMethods);
+  if (!config.standalone) {
+    // form-shared-module.ts
+    createSharedModule(config);
+    // form-module.ts
+    createServiceModule(config, name, processedMethods);
+  }
 }

@@ -17,6 +17,7 @@ export interface Config {
   unwrapSingleParamMethods: boolean;
   typedForms: boolean;
   cleanArchitecture: boolean;
+  standalone: boolean;
 }
 
 /**
@@ -45,7 +46,8 @@ export function generate(
   typedForms = false,
   readOnly = "",
   environmentCache = conf.environmentCache,
-  cleanArchitecture = false
+  cleanArchitecture = false,
+  standalone = false
 ) {
   let schema: NormalizedSchema;
 
@@ -100,6 +102,7 @@ export function generate(
     unwrapSingleParamMethods,
     typedForms,
     cleanArchitecture,
+    standalone,
   };
 
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);

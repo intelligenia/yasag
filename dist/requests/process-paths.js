@@ -56,7 +56,9 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
         modules.push(name);
     });
     // Create global module for forms
-    (0, forms_module_1.createFormsModule)(config, modules);
+    if (!config.standalone) {
+        (0, forms_module_1.createFormsModule)(config, modules);
+    }
     // Create the abstract class
     (0, service_get_abstract_1.createServiceGetAbstractClass)(config);
     (0, service_post_abstract_1.createServicePostAbstractClass)(config);

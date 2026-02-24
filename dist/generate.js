@@ -23,7 +23,7 @@ const utils_1 = require("./utils");
  * @param omitHeader
  * @param readOnly
  */
-function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false, typedForms = false, readOnly = "", environmentCache = conf.environmentCache, cleanArchitecture = false) {
+function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, unwrapSingleParamMethods = false, swaggerUrlPath = conf.swaggerUrlPath, omitVersion = false, omitBasepath = false, environmentAPI = conf.environmentAPI, omitHeader = false, typedForms = false, readOnly = "", environmentCache = conf.environmentCache, cleanArchitecture = false, standalone = false) {
     let schema;
     try {
         const content = fs.readFileSync(src).toString();
@@ -70,6 +70,7 @@ function generate(src = conf.apiFile, dest = conf.outDir, generateStore = true, 
         unwrapSingleParamMethods,
         typedForms,
         cleanArchitecture,
+        standalone,
     };
     if (!fs.existsSync(dest))
         fs.mkdirSync(dest);

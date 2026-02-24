@@ -8,6 +8,7 @@ import { writeFile } from "../utils";
  * @param config: global configuration for YASAG
  */
 export function createServiceGetAbstractClass(config: Config) {
+  const ngZoneType = config.standalone ? 'NgZone | null' : 'NgZone';
   const content = `
   import { FormGroup } from '@angular/forms';
   import { NgZone } from '@angular/core';
@@ -31,8 +32,16 @@ export function createServiceGetAbstractClass(config: Config) {
     protected cache: string;
 
 
-    constructor(className: string, protected  apiConfigService: APIConfigService, protected  ngZone: NgZone) {
+    constructor(className: string, protected  apiConfigService: APIConfigService, protected  ngZone: ${ngZoneType}) {
       this.cache = className;
+    }
+
+    private runInZone(fn: () => void): void {
+      if (this.ngZone) {
+        this.ngZone.run(fn);
+      } else {
+        fn();
+      }
     }
 
     init() {
@@ -91,7 +100,7 @@ export function createServiceGetAbstractClass(config: Config) {
       let cacheFunction;
       if (type === "void") {
         cacheFunction = () => {
-          this.ngZone.run(() => {
+          this.runInZone(() => {
             subject.next(undefined);
             if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
               this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();
@@ -107,7 +116,7 @@ export function createServiceGetAbstractClass(config: Config) {
       }else {
         cacheFunction = val => {
 
-          this.ngZone.run(() => {
+          this.runInZone(() => {
             if (type !== 'Blob') {
               val = JSON.parse(JSON.stringify(val));
             }
@@ -141,7 +150,7 @@ export function createServiceGetAbstractClass(config: Config) {
           } else {
             // The backend returned an unsuccessful response code.
             // The response body may contain clues as to what went wrong,
-            this.ngZone.run(() => {
+            this.runInZone(() => {
               this.serverErrorsSubject.next(error.error);
               subject.error(error);
               subject.complete();

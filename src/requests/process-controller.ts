@@ -83,7 +83,11 @@ export function processController(
     content += "\n";
   }
 
-  content += `@Injectable()\n`;
+  if (config.standalone) {
+    content += `@Injectable({ providedIn: 'root' })\n`;
+  } else {
+    content += `@Injectable()\n`;
+  }
   content += `export class ${name}Service {\n`;
   content += indent("constructor(\n");
   content += indent("private http: HttpClient,\n", 2);

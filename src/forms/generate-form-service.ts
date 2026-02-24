@@ -76,10 +76,14 @@ export function generateFormService(
   const variables = getVariables(method);
 
   // Imports
-  content += getImports(name, constructor, methodName);
+  content += getImports(name, constructor, methodName, config);
 
   // Class declaration
-  content += `@Injectable()\n`;
+  if (config.standalone) {
+    content += `@Injectable({ providedIn: 'root' })\n`;
+  } else {
+    content += `@Injectable()\n`;
+  }
   let observableType = method.responseDef.type;
   if (observableType === "string" && method.responseDef.format === "binary") {
     observableType = "Blob";
@@ -114,7 +118,7 @@ export function generateFormService(
   writeFile(componentHTMLFileName, content, config.header);
 }
 
-function getImports(name: string, constructor: string, methodName: string) {
+function getImports(name: string, constructor: string, methodName: string, config: Config) {
   const imports: string[] = [];
 
   if (constructor.match(/new FormArray\(/)) imports.push("FormArray");
@@ -123,6 +127,27 @@ function getImports(name: string, constructor: string, methodName: string) {
   if (constructor.match(/new FormControl/)) imports.push("FormControl");
   if (constructor.match(/new FormGroup\(/)) imports.push("FormGroup");
   if (constructor.match(/\[Validators\./)) imports.push("Validators");
+
+  if (config.standalone) {
+    let res = "import { Injectable, inject, NgZone } from '@angular/core';\n";
+    if (imports.length)
+      res += `import {${imports.join(", ")}} from '@angular/forms';\n`;
+    res += "import {  Observable } from 'rxjs';\n";
+    res += `import { ${name}Service } from '../../../controllers/${name}';\n`;
+    res += `import * as __model from '../../../model';\n`;
+    res += "import { APIConfigService } from '../../../apiconfig.service';\n\n";
+    res += "import * as __utils from '../../../yasag-utils';\n\n";
+
+    if (methodName === "get") {
+      res += "import { YASAGGetFormService } from '../../yasag-get.service';\n\n";
+    } else {
+      res +=
+        "import { YASAGPostFormService } from '../../yasag-post.service';\n\n";
+    }
+
+    res += "\n";
+    return res;
+  }
 
   let res = "import { Injectable, NgZone } from '@angular/core';\n";
   if (imports.length)
@@ -200,16 +225,26 @@ function getConstructor(
     `${formName} = new FormGroup({\n${formDefinition}\n});\n`,
     1
   );
-  res += indent("constructor(\n");
-  res += indent(`apiConfigService: APIConfigService,\n`, 2);
-  res += indent(`ngZone: NgZone,\n`, 2);
-  res += indent(`private service: ${name}Service,\n`, 2);
-  res += indent(") {\n");
 
-  res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
-
-  res += indent(`this.init();\n`, 2);
-  res += indent("}\n");
+  if (config.standalone) {
+    res += indent("constructor(\n");
+    res += indent(`private service: ${name}Service,\n`, 2);
+    res += indent(") {\n");
+    res += indent(`const apiConfigService = inject(APIConfigService);\n`, 2);
+    res += indent(`const ngZone = inject(NgZone, { optional: true });\n`, 2);
+    res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
+    res += indent(`this.init();\n`, 2);
+    res += indent("}\n");
+  } else {
+    res += indent("constructor(\n");
+    res += indent(`apiConfigService: APIConfigService,\n`, 2);
+    res += indent(`ngZone: NgZone,\n`, 2);
+    res += indent(`private service: ${name}Service,\n`, 2);
+    res += indent(") {\n");
+    res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
+    res += indent(`this.init();\n`, 2);
+    res += indent("}\n");
+  }
   res += "\n";
 
   for (const method of formArrayMethods) {
