@@ -1,12 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.adHocExceptions = exports.controllerIgnores = exports.allowedParams = exports.nativeTypes = exports.swaggerFile = exports.typeForms = exports.omitHeader = exports.environmentCache = exports.environmentAPI = exports.omitBasepath = exports.omitVersion = exports.swaggerUrlPath = exports.indentation = exports.modelFile = exports.apiFile = exports.stateDir = exports.storeDir = exports.apiDir = exports.defsDir = exports.outDir = void 0;
+exports.adHocExceptions = exports.controllerIgnores = exports.allowedParams = exports.nativeTypes = exports.swaggerFile = exports.typeForms = exports.omitHeader = exports.environmentCache = exports.environmentAPI = exports.omitBasepath = exports.omitVersion = exports.swaggerUrlPath = exports.indentation = exports.modelFile = exports.apiFile = exports.usecasesDir = exports.dataDir = exports.domainDir = exports.stateDir = exports.storeDir = exports.apiDir = exports.defsDir = exports.outDir = void 0;
 // relative to project root
 exports.outDir = "src/api";
 exports.defsDir = "defs";
 exports.apiDir = "controllers";
 exports.storeDir = "forms";
 exports.stateDir = "states";
+exports.domainDir = "domain";
+exports.dataDir = "data";
+exports.usecasesDir = "usecases";
 exports.apiFile = "conf/api/api-docs.json";
 exports.modelFile = "model";
 exports.indentation = 2;
@@ -45,7 +48,7 @@ exports.allowedParams = {
     patch: ["path", "body", "query", "formData"],
     post: ["path", "body", "query", "formData"],
     put: ["path", "body", "query"],
-    delete: ["path"],
+    delete: ["path", "query"],
 };
 // list of simplified names of controllers
 // that do not to generate api layer

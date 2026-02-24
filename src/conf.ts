@@ -7,6 +7,9 @@ export const defsDir = "defs";
 export const apiDir = "controllers";
 export const storeDir = "forms";
 export const stateDir = "states";
+export const domainDir = "domain";
+export const dataDir = "data";
+export const usecasesDir = "usecases";
 export const apiFile = "conf/api/api-docs.json";
 export const modelFile = "model";
 export const indentation = 2;
@@ -47,7 +50,7 @@ export const allowedParams: { [key in MethodName]: string[] } = {
   patch: ["path", "body", "query", "formData"],
   post: ["path", "body", "query", "formData"],
   put: ["path", "body", "query"],
-  delete: ["path"],
+  delete: ["path", "query"],
 };
 // list of simplified names of controllers
 // that do not to generate api layer

@@ -59,9 +59,23 @@ export function processProperty(
         type = defType.type;
         break;
       case "array":
-        defType = translateType(prop.items.type || prop.items.$ref);
-        if (defType.arraySimple) type = `${defType.type}[]`;
-        else type = `Array<${defType.type}>`;
+        if (prop.items && prop.items.properties && !prop.items.$ref) {
+          // Inline object array - generate anonymous interface-like type
+          const propTypes = Object.entries(prop.items.properties).map(([k, v]: [string, Schema]) => {
+            const propRequired = prop.items.required && prop.items.required.includes(k);
+            const opt = propRequired ? "" : "?";
+            const innerType = v.$ref ? translateType(v.$ref).type
+              : v.type && v.type in conf.nativeTypes ? conf.nativeTypes[v.type as NativeNames]
+              : v.type || "any";
+            return `${k}${opt}: ${innerType}`;
+          });
+          type = `{${propTypes.join(", ")}}[]`;
+          defType = { type: "object", native: true, arraySimple: true };
+        } else {
+          defType = translateType(prop.items.type || prop.items.$ref);
+          if (defType.arraySimple) type = `${defType.type}[]`;
+          else type = `Array<${defType.type}>`;
+        }
         break;
       default:
         if (prop.additionalProperties) {
@@ -179,7 +193,7 @@ export function translateType(type: string): DefType {
     };
   }
   type = type.replace("[", "").replace("]", "");
-  const subtype = type.match(/^#\/definitions\/(.*)/);
+  const subtype = type.match(/^#\/definitions\/(.*)/) || type.match(/^#\/components\/schemas\/(.*)/);
   if (subtype) {
     const generic = subtype[1].match(/([^«]+)«(.+)»/);
     // collection translates to array

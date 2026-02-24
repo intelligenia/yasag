@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateFormService = void 0;
+exports.getValidators = exports.generateFormService = void 0;
 const _ = require("lodash");
 const nodePath = require("path");
 const common_1 = require("../common");
@@ -86,7 +86,25 @@ function getConstructor(name, className, definitions, params, formName, formArra
     const definitionsMap = _.groupBy(definitions, "name");
     const parentTypes = [];
     const formArrayMethods = [];
-    const formDefinition = walkParamOrProp(params, undefined, definitionsMap, parentTypes, `this.${formName}`, formArrayMethods, "value", "value", formArrayReset, formArrayPatch, readOnly, config);
+    const ctx = {
+        definitions: definitionsMap,
+        parentTypes,
+        control: `this.${formName}`,
+        formArrayMethods,
+        formValue: "value",
+        formValueIF: "value",
+        formArrayReset,
+        formArrayPatch,
+        readOnly,
+        config,
+        formArrayParams: "",
+        subArrayReset: [],
+        subArrayPatch: [],
+        parent: "",
+        parents: "",
+        nameParents: "",
+    };
+    const formDefinition = walkParamOrProp(params, undefined, ctx);
     let res = (0, utils_1.indent)(`${formName} = new FormGroup({\n${formDefinition}\n});\n`, 1);
     res += (0, utils_1.indent)("constructor(\n");
     res += (0, utils_1.indent)(`apiConfigService: APIConfigService,\n`, 2);
@@ -97,13 +115,13 @@ function getConstructor(name, className, definitions, params, formName, formArra
     res += (0, utils_1.indent)(`this.init();\n`, 2);
     res += (0, utils_1.indent)("}\n");
     res += "\n";
-    for (const method in formArrayMethods) {
-        res += formArrayMethods[method];
+    for (const method of formArrayMethods) {
+        res += method;
         res += "\n";
     }
     return res;
 }
-function walkParamOrProp(definition, path = [], definitions, parentTypes, control, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams = "", subArrayReset = [], subArrayPatch = [], parent = "", parents = "", nameParents = "") {
+function walkParamOrProp(definition, path = [], ctx) {
     const res = [];
     let schema;
     let required;
@@ -131,7 +149,7 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
     Object.entries(schema).forEach(([paramName, param]) => {
         const ref = param.$ref;
         // break type definition chain with cycle
-        if (parentTypes.indexOf(ref) >= 0)
+        if (ctx.parentTypes.indexOf(ref) >= 0)
             return;
         const name = paramName;
         const newPath = [...path, name];
@@ -139,18 +157,19 @@ function walkParamOrProp(definition, path = [], definitions, parentTypes, contro
         const isNullable = nullable && nullable.includes(name);
         let newParentTypes = [];
         if (ref)
-            newParentTypes = [...parentTypes, ref];
-        if (readOnly && name.endsWith(readOnly)) {
+            newParentTypes = [...ctx.parentTypes, ref];
+        if (ctx.readOnly && name.endsWith(ctx.readOnly)) {
             param.readOnly = true;
         }
         if (!param.readOnly || name === "id") {
-            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, isNullable, definitions, newParentTypes, `${control}['controls']['${name}']`, formArrayMethods, formValue + `['${name}']`, `${formValueIF} && ${formValue}['${name}']`, formArrayReset, formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents, readOnly, config);
+            const childCtx = Object.assign(Object.assign({}, ctx), { parentTypes: ref ? newParentTypes : ctx.parentTypes, formValueIF: `${ctx.formValueIF} && ${ctx.formValue}['${name}']` });
+            const fieldDefinition = makeField(param, ref, name, newPath, isRequired, isNullable, childCtx);
             res.push(fieldDefinition);
         }
     });
     return (0, utils_1.indent)(res);
 }
-function makeField(param, ref, name, path, required, nullable, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents = "", readOnly, config) {
+function makeField(param, ref, name, path, required, nullable, ctx) {
     let definition;
     let type = param.type;
     let control;
@@ -162,90 +181,123 @@ function makeField(param, ref, name, path, required, nullable, definitions, pare
         }
         // use helper method and store type definition to add new array items
         if (type === "array") {
-            if (param.items.type) {
+            if (param.items && param.items.type && param.items.type !== 'object' && !param.items.properties) {
+                // CASO A: array of primitives (string[], number[])
                 control = "FormControl";
                 initializer = "[]";
             }
             else {
-                const refType = param.items.$ref.replace(/^#\/definitions\//, "");
-                definition = definitions[(0, common_1.normalizeDef)(refType)][0];
-                const mySubArrayReset = [];
-                const mySubArrayPatch = [];
-                const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl + `['controls'][${name}]`, formArrayMethods, formValue + `[${name}]`, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams + name + ": number" + ", ", mySubArrayReset, mySubArrayPatch, name, parents + name + ", ", nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))));
-                control = "FormArray";
-                if (config.typedForms) {
-                    control = "UntypedFormArray";
+                // Determine definition for FormArray: $ref (CASO B) or inline (CASO C)
+                if (param.items && param.items.$ref) {
+                    // CASO B: array of $ref objects
+                    const refType = param.items.$ref.replace(/^#\/(definitions|components\/schemas)\//, "");
+                    const defLookup = ctx.definitions[(0, common_1.normalizeDef)(refType)];
+                    if (!defLookup || !defLookup.length) {
+                        (0, utils_1.out)(`Warning: definition '${refType}' not found for array items.$ref, treating as primitive array`, utils_1.TermColors.red);
+                        control = "FormControl";
+                        initializer = "[]";
+                    }
+                    else {
+                        definition = defLookup[0];
+                    }
                 }
-                initializer = `[]`;
-                let addMethod = "";
-                addMethod += (0, utils_1.indent)(`public add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
-                addMethod += (0, utils_1.indent)(`const control = <${control}>${formControl};\n`, 2);
-                addMethod += (0, utils_1.indent)(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 2);
-                addMethod += (0, utils_1.indent)(`__utils.addField(control,${name}, fg, position, value);\n`, 2);
-                addMethod += (0, utils_1.indent)(`}\n`);
-                formArrayMethods.push(addMethod);
-                let removeMethod = "";
-                removeMethod += (0, utils_1.indent)(`public remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formArrayParams} i: number): void {\n`);
-                removeMethod += (0, utils_1.indent)(`const control = <${control}>${formControl};\n`, 2);
-                removeMethod += (0, utils_1.indent)(`control.removeAt(i);\n`, 2);
-                removeMethod += (0, utils_1.indent)(`}\n`);
-                formArrayMethods.push(removeMethod);
-                if (formArrayParams === "") {
-                    let resetMethod = "";
-                    resetMethod += (0, utils_1.indent)(`while ((<${control}>${formControl}).length) {\n`);
-                    resetMethod += (0, utils_1.indent)(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 2);
-                    resetMethod += (0, utils_1.indent)(`}\n`);
-                    resetMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
-                    resetMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length);\n`, 2);
-                    mySubArrayReset.forEach((subarray) => {
-                        resetMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
-                    });
-                    resetMethod += (0, utils_1.indent)(`}\n`);
-                    formArrayReset.push(resetMethod);
-                    let patchMethod = "";
-                    patchMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
-                    patchMethod += (0, utils_1.indent)(`while (this.form.${formValue}.length > 0) {\n`, 2);
-                    patchMethod += (0, utils_1.indent)(`this.remove${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(0);\n`, 3);
-                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
-                    patchMethod += (0, utils_1.indent)(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
-                    patchMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${formValue}.length - this.form.${formValue}.length);\n`, 3);
-                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
-                    mySubArrayPatch.forEach((subarray) => {
-                        patchMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
-                    });
-                    patchMethod += (0, utils_1.indent)(`}\n`);
-                    formArrayPatch.push(patchMethod);
+                else if (param.items && (param.items.properties || param.items.type === 'object')) {
+                    // CASO C: array of inline objects (items.properties without $ref)
+                    definition = {
+                        name,
+                        def: {
+                            properties: param.items.properties || {},
+                            required: param.items.required,
+                        }
+                    };
                 }
-                else {
-                    let resetMethod = "";
-                    resetMethod += `(${parent}_object, ${parent}) => {\n`;
-                    resetMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
-                    resetMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length);\n`, 2);
-                    mySubArrayReset.forEach((subarray) => {
-                        resetMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
-                    });
-                    resetMethod += (0, utils_1.indent)(`}\n`);
-                    resetMethod += `}`;
-                    subArrayReset.push(resetMethod);
-                    let patchMethod = "";
-                    patchMethod += `(${parent}_object, ${parent}) => {\n`;
-                    patchMethod += (0, utils_1.indent)(`if (${formValueIF}) {\n`);
-                    patchMethod += (0, utils_1.indent)(`if (${formValue}.length > this.form.${formValue}.length) {\n`, 2);
-                    patchMethod += (0, utils_1.indent)(`this.add${nameParents}${_.upperFirst(_.camelCase(name.replace("_", "-")))}(${parents}${formValue}.length - this.form.${formValue}.length);\n`, 3);
-                    patchMethod += (0, utils_1.indent)(`}\n`, 2);
-                    mySubArrayPatch.forEach((subarray) => {
-                        patchMethod += (0, utils_1.indent)(`${formValue}.forEach(${subarray});\n`, 2);
-                    });
-                    patchMethod += (0, utils_1.indent)(`}\n`);
-                    patchMethod += `}`;
-                    subArrayPatch.push(patchMethod);
+                if (definition) {
+                    const mySubArrayReset = [];
+                    const mySubArrayPatch = [];
+                    const childCtx = Object.assign(Object.assign({}, ctx), { control: ctx.control + `['controls']['${name}']` + `['controls'][${name}]`, formValue: ctx.formValue + `['${name}']` + `[${name}]`, formArrayParams: ctx.formArrayParams + name + ": number" + ", ", subArrayReset: mySubArrayReset, subArrayPatch: mySubArrayPatch, parent: name, parents: ctx.parents + name + ", ", nameParents: ctx.nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))) });
+                    const fields = walkParamOrProp(definition, path, childCtx);
+                    control = "FormArray";
+                    if (ctx.config.typedForms) {
+                        control = "UntypedFormArray";
+                    }
+                    initializer = `[]`;
+                    const camelName = _.upperFirst(_.camelCase(name.replace("_", "-")));
+                    const fullName = ctx.nameParents + camelName;
+                    let addMethod = "";
+                    addMethod += (0, utils_1.indent)(`public add${fullName}(${ctx.formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`);
+                    addMethod += (0, utils_1.indent)(`const control = <${control}>${ctx.control}['controls']['${name}'];\n`, 2);
+                    addMethod += (0, utils_1.indent)(`const fg = new FormGroup({\n${fields}\n}, []);\n`, 2);
+                    addMethod += (0, utils_1.indent)(`__utils.addField(control,${name}, fg, position, value);\n`, 2);
+                    addMethod += (0, utils_1.indent)(`}\n`);
+                    ctx.formArrayMethods.push(addMethod);
+                    let removeMethod = "";
+                    removeMethod += (0, utils_1.indent)(`public remove${fullName}(${ctx.formArrayParams} i: number): void {\n`);
+                    removeMethod += (0, utils_1.indent)(`const control = <${control}>${ctx.control}['controls']['${name}'];\n`, 2);
+                    removeMethod += (0, utils_1.indent)(`control.removeAt(i);\n`, 2);
+                    removeMethod += (0, utils_1.indent)(`}\n`);
+                    ctx.formArrayMethods.push(removeMethod);
+                    if (ctx.formArrayParams === "") {
+                        let resetMethod = "";
+                        resetMethod += (0, utils_1.indent)(`while ((<${control}>${ctx.control}['controls']['${name}']).length) {\n`);
+                        resetMethod += (0, utils_1.indent)(`this.remove${fullName}(0);\n`, 2);
+                        resetMethod += (0, utils_1.indent)(`}\n`);
+                        resetMethod += (0, utils_1.indent)(`if (${ctx.formValueIF}) {\n`);
+                        resetMethod += (0, utils_1.indent)(`this.add${fullName}(${ctx.formValue}['${name}'].length);\n`, 2);
+                        for (const subarray of mySubArrayReset) {
+                            resetMethod += (0, utils_1.indent)(`${ctx.formValue}['${name}'].forEach(${subarray});\n`, 2);
+                        }
+                        resetMethod += (0, utils_1.indent)(`}\n`);
+                        ctx.formArrayReset.push(resetMethod);
+                        let patchMethod = "";
+                        patchMethod += (0, utils_1.indent)(`if (${ctx.formValueIF}) {\n`);
+                        patchMethod += (0, utils_1.indent)(`while (this.form.${ctx.formValue}['${name}'].length > 0) {\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`this.remove${fullName}(0);\n`, 3);
+                        patchMethod += (0, utils_1.indent)(`}\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`if (${ctx.formValue}['${name}'].length > this.form.${ctx.formValue}['${name}'].length) {\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`this.add${fullName}(${ctx.formValue}['${name}'].length - this.form.${ctx.formValue}['${name}'].length);\n`, 3);
+                        patchMethod += (0, utils_1.indent)(`}\n`, 2);
+                        for (const subarray of mySubArrayPatch) {
+                            patchMethod += (0, utils_1.indent)(`${ctx.formValue}['${name}'].forEach(${subarray});\n`, 2);
+                        }
+                        patchMethod += (0, utils_1.indent)(`}\n`);
+                        ctx.formArrayPatch.push(patchMethod);
+                    }
+                    else {
+                        let resetMethod = "";
+                        resetMethod += `(${ctx.parent}_object, ${ctx.parent}) => {\n`;
+                        resetMethod += (0, utils_1.indent)(`if (${ctx.formValueIF}) {\n`);
+                        resetMethod += (0, utils_1.indent)(`this.add${fullName}(${ctx.parents}${ctx.formValue}['${name}'].length);\n`, 2);
+                        for (const subarray of mySubArrayReset) {
+                            resetMethod += (0, utils_1.indent)(`${ctx.formValue}['${name}'].forEach(${subarray});\n`, 2);
+                        }
+                        resetMethod += (0, utils_1.indent)(`}\n`);
+                        resetMethod += `}`;
+                        ctx.subArrayReset.push(resetMethod);
+                        let patchMethod = "";
+                        patchMethod += `(${ctx.parent}_object, ${ctx.parent}) => {\n`;
+                        patchMethod += (0, utils_1.indent)(`if (${ctx.formValueIF}) {\n`);
+                        patchMethod += (0, utils_1.indent)(`if (${ctx.formValue}['${name}'].length > this.form.${ctx.formValue}['${name}'].length) {\n`, 2);
+                        patchMethod += (0, utils_1.indent)(`this.add${fullName}(${ctx.parents}${ctx.formValue}['${name}'].length - this.form.${ctx.formValue}['${name}'].length);\n`, 3);
+                        patchMethod += (0, utils_1.indent)(`}\n`, 2);
+                        for (const subarray of mySubArrayPatch) {
+                            patchMethod += (0, utils_1.indent)(`${ctx.formValue}['${name}'].forEach(${subarray});\n`, 2);
+                        }
+                        patchMethod += (0, utils_1.indent)(`}\n`);
+                        patchMethod += `}`;
+                        ctx.subArrayPatch.push(patchMethod);
+                    }
+                }
+                else if (!control) {
+                    // Fallback: treat as primitive array
+                    control = "FormControl";
+                    initializer = "[]";
                 }
             }
         }
         else {
-            let isNullable = nullable ? " | null" : "";
+            const isNullable = nullable ? " | null" : "";
             control = "FormControl";
-            if (config.typedForms) {
+            if (ctx.config.typedForms) {
                 control += `<${type}${isNullable}>`;
             }
             initializer =
@@ -256,11 +308,20 @@ function makeField(param, ref, name, path, required, nullable, definitions, pare
         }
     }
     else {
-        const refType = ref.replace(/^#\/definitions\//, "");
-        definition = definitions[(0, common_1.normalizeDef)(refType)][0];
-        control = "FormGroup";
-        const fields = walkParamOrProp(definition, path, definitions, parentTypes, formControl, formArrayMethods, formValue, formValueIF, formArrayReset, formArrayPatch, readOnly, config, formArrayParams, subArrayReset, subArrayPatch, parent, parents, nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))));
-        initializer = `{\n${fields}\n}`;
+        const refType = ref.replace(/^#\/(definitions|components\/schemas)\//, "");
+        const defLookup = ctx.definitions[(0, common_1.normalizeDef)(refType)];
+        if (!defLookup || !defLookup.length) {
+            (0, utils_1.out)(`Warning: definition '${refType}' not found for $ref, generating empty FormGroup`, utils_1.TermColors.red);
+            control = "FormGroup";
+            initializer = "{}";
+        }
+        else {
+            definition = defLookup[0];
+            control = "FormGroup";
+            const childCtx = Object.assign(Object.assign({}, ctx), { control: ctx.control + `['controls']['${name}']`, formValue: ctx.formValue + `['${name}']`, nameParents: ctx.nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))) });
+            const fields = walkParamOrProp(definition, path, childCtx);
+            initializer = `{\n${fields}\n}`;
+        }
     }
     const validators = getValidators(param);
     if (required)
@@ -271,22 +332,56 @@ function getValidators(param) {
     const validators = [];
     if (param.format && param.format === "email")
         validators.push("Validators.email");
-    if (param.maximum)
+    if (param.maximum !== undefined)
         validators.push(`Validators.max(${param.maximum})`);
-    if (param.minimum)
+    if (param.minimum !== undefined)
         validators.push(`Validators.min(${param.minimum})`);
-    if (param.maxLength)
+    // exclusiveMinimum: OAS 3.0 uses boolean (combine with minimum), OAS 3.1 uses number
+    if (param.exclusiveMinimum !== undefined) {
+        if (typeof param.exclusiveMinimum === 'number') {
+            // OAS 3.1: exclusiveMinimum is the actual boundary value
+            // Angular Validators.min is inclusive (>=), so we use the value directly
+            // since there's no "exclusiveMin" validator in Angular
+            validators.push(`Validators.min(${param.exclusiveMinimum})`);
+        }
+        else if (param.exclusiveMinimum === true && param.minimum !== undefined) {
+            // OAS 3.0: boolean flag means minimum is exclusive
+            validators.push(`Validators.min(${param.minimum + 1})`);
+        }
+    }
+    // exclusiveMaximum: OAS 3.0 uses boolean (combine with maximum), OAS 3.1 uses number
+    if (param.exclusiveMaximum !== undefined) {
+        if (typeof param.exclusiveMaximum === 'number') {
+            validators.push(`Validators.max(${param.exclusiveMaximum})`);
+        }
+        else if (param.exclusiveMaximum === true && param.maximum !== undefined) {
+            validators.push(`Validators.max(${param.maximum - 1})`);
+        }
+    }
+    if (param.maxLength !== undefined)
         validators.push(`Validators.maxLength(${param.maxLength})`);
-    if (param.minLength)
+    if (param.minLength !== undefined)
         validators.push(`Validators.minLength(${param.minLength})`);
     if (param.pattern)
         validators.push(`Validators.pattern(/${param.pattern}/)`);
+    // multipleOf: generate pattern validator for integer multiples
+    if (param.multipleOf !== undefined) {
+        validators.push(`__utils.multipleOfValidator(${param.multipleOf})`);
+    }
+    // minItems/maxItems: for FormArray length validation (applied as minLength/maxLength)
+    if (param.minItems !== undefined) {
+        validators.push(`Validators.minLength(${param.minItems})`);
+    }
+    if (param.maxItems !== undefined) {
+        validators.push(`Validators.maxLength(${param.maxItems})`);
+    }
     return validators;
 }
+exports.getValidators = getValidators;
 function getFormSubmitFunction(simpleName, paramGroups, methodName, method) {
     let res = "";
     let type = method.responseDef.type;
-    let paramName = methodName === "patch" && method.paramGroups.body
+    const paramName = methodName === "patch" && method.paramGroups.body
         ? method.paramGroups.body[0].name
         : null;
     const isPatch = method.methodName === "patch" && method.paramGroups.body !== undefined;
@@ -325,14 +420,14 @@ function getFormResetFunction(formName, formArrayReset, formArrayPatch, methodNa
     let res = "";
     res += (0, utils_1.indent)("reset(value?: typeof this.form.value): void {\n");
     res += (0, utils_1.indent)(`this.form.reset();\n`, 2);
-    for (const i in formArrayReset) {
-        res += (0, utils_1.indent)(formArrayReset[i]);
+    for (const resetEntry of formArrayReset) {
+        res += (0, utils_1.indent)(resetEntry);
     }
     res += (0, utils_1.indent)(`super.reset(value, ${methodName === "patch"}); \n`, 2);
     res += (0, utils_1.indent)("}\n\n");
     res += (0, utils_1.indent)("patch(value: typeof this.form.value): void {\n");
-    for (const i in formArrayPatch) {
-        res += (0, utils_1.indent)(formArrayPatch[i]);
+    for (const patchEntry of formArrayPatch) {
+        res += (0, utils_1.indent)(patchEntry);
     }
     res += (0, utils_1.indent)(`this.${formName}.patchValue(value);\n`, 2);
     res += (0, utils_1.indent)("}\n");

@@ -28,7 +28,7 @@ export function processController(
   config: Config,
   definitions: ProcessedDefinition[],
   readOnly: string
-) {
+): MethodOutput[] {
   const filename = path.join(config.dest, conf.apiDir, `${name}.ts`);
   let usesGlobalType = false;
 
@@ -105,4 +105,6 @@ export function processController(
   if (config.generateStore) {
     createForms(config, name, processedMethods, definitions, readOnly);
   }
+
+  return processedMethods;
 }

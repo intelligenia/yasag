@@ -46,6 +46,10 @@ program
     "-c, --environment-cache <environmentCache>",
     `Name of the environment variable for the cache size configuration, default name: ${conf.environmentCache}, default size 1000 elements`
   )
+  .option(
+    "-a, --clean-architecture",
+    "Generate clean architecture layers (domain, data, usecases)"
+  )
   .parse(process.argv);
 
 const options = program.opts();
@@ -62,5 +66,6 @@ generate(
   options.omitHeader,
   options.typedForms,
   options.readOnly,
-  options.environmentCache
+  options.environmentCache,
+  options.cleanArchitecture
 );

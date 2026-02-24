@@ -72,6 +72,14 @@ export function parameterToSchema(param: Parameter): Schema {
       type: param.type,
       uniqueItems: param.uniqueItems,
       "x-nullable": param["x-nullable"],
+      exclusiveMinimum: param.exclusiveMinimum,
+      exclusiveMaximum: param.exclusiveMaximum,
+      multipleOf: param.multipleOf,
+      minItems: param.minItems,
+      maxItems: param.maxItems,
+      readOnly: param.readOnly,
+      writeOnly: param.writeOnly,
+      example: param.example,
     },
     ...param.schema, // move level up
   };

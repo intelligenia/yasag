@@ -3,8 +3,11 @@ import * as fs from "fs";
 import * as conf from "./conf";
 
 import * as path from "path";
+import { normalizeSchema } from "./adapters";
+import { generateDomain, generateRepositories, generateUsecases } from "./clean-arch";
 import { processDefinitions } from "./definitions";
 import { processPaths } from "./requests/process-paths";
+import { NormalizedSchema } from "./types";
 import { createDir, emptyDir, out, processHeader, TermColors } from "./utils";
 
 export interface Config {
@@ -13,6 +16,7 @@ export interface Config {
   generateStore: boolean;
   unwrapSingleParamMethods: boolean;
   typedForms: boolean;
+  cleanArchitecture: boolean;
 }
 
 /**
@@ -40,13 +44,27 @@ export function generate(
   omitHeader = false,
   typedForms = false,
   readOnly = "",
-  environmentCache = conf.environmentCache
+  environmentCache = conf.environmentCache,
+  cleanArchitecture = false
 ) {
-  let schema: any;
+  let schema: NormalizedSchema;
 
   try {
-    const content = fs.readFileSync(src);
-    schema = JSON.parse(content.toString());
+    const content = fs.readFileSync(src).toString();
+    // Try JSON first, then attempt basic YAML-like parsing
+    try {
+      schema = JSON.parse(content);
+    } catch {
+      // If not valid JSON, try to detect if it's YAML
+      if (content.match(/^(swagger|openapi|swaggerVersion)\s*:/m)) {
+        out(
+          `${src} appears to be YAML. Please convert to JSON first (e.g. using yq or an online converter).`,
+          TermColors.red
+        );
+        return;
+      }
+      throw new SyntaxError(`Not valid JSON: ${src}`);
+    }
   } catch (e) {
     if (e instanceof SyntaxError) {
       out(
@@ -59,6 +77,9 @@ export function generate(
     return;
   }
 
+  // Normalize schema (detect version and convert to internal format)
+  schema = normalizeSchema(schema);
+
   // normalize basePath, strip trailing '/'s
   const basePath = schema.basePath;
   if (typeof basePath === "string") {
@@ -69,7 +90,7 @@ export function generate(
     schema.basePath = "";
   }
 
-  recreateDirectories(dest, generateStore);
+  recreateDirectories(dest, generateStore, cleanArchitecture);
 
   const header = processHeader(schema, omitVersion, omitHeader);
   const config: Config = {
@@ -78,11 +99,12 @@ export function generate(
     generateStore,
     unwrapSingleParamMethods,
     typedForms,
+    cleanArchitecture,
   };
 
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);
   const definitions = processDefinitions(schema.definitions, config);
-  processPaths(
+  const processedControllers = processPaths(
     schema.paths,
     `http://${schema.host}${swaggerUrlPath}${conf.swaggerFile}`,
     config,
@@ -92,9 +114,16 @@ export function generate(
     readOnly,
     environmentCache
   );
+
+  if (cleanArchitecture) {
+    out("Generating clean architecture layers...", TermColors.green);
+    generateDomain(config, definitions);
+    generateRepositories(config, processedControllers);
+    generateUsecases(config, processedControllers);
+  }
 }
 
-function recreateDirectories(dest: string, generateStore: boolean) {
+function recreateDirectories(dest: string, generateStore: boolean, cleanArchitecture = false) {
   emptyDir(path.join(dest, conf.defsDir), true);
   emptyDir(path.join(dest, conf.apiDir), true);
   emptyDir(path.join(dest, conf.storeDir), true);
@@ -102,4 +131,10 @@ function recreateDirectories(dest: string, generateStore: boolean) {
   createDir(path.join(dest, conf.defsDir));
   createDir(path.join(dest, conf.apiDir));
   if (generateStore) createDir(path.join(dest, conf.storeDir));
+
+  if (cleanArchitecture) {
+    emptyDir(path.join(dest, conf.domainDir), true);
+    emptyDir(path.join(dest, conf.dataDir), true);
+    emptyDir(path.join(dest, conf.usecasesDir), true);
+  }
 }

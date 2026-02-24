@@ -17,6 +17,7 @@
     "postbuild": "",
     "preversion": "npm run build",
     "postversion": "git status",
+    "test": "npx tsx --test tests/*.test.ts",
     "lint": "tslint -p tsconfig.json",
     "lint:fix": "tslint -p tsconfig.json --fix"
   },

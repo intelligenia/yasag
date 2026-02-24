@@ -44,7 +44,7 @@ export function emptyDir(path: string, removeSelf = false) {
     else fs.unlinkSync(current);
   });
 
-  if (removeSelf) fs.rmdirSync(path);
+  if (removeSelf) fs.rmSync(path, { recursive: true });
 }
 
 /**
