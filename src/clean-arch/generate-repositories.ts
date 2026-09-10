@@ -27,7 +27,18 @@ export function generateRepositories(config: Config, controllers: ProcessedContr
     // Collect method signatures
     const methodSignatures: string[] = [];
     const methodImplementations: string[] = [];
-    const usesModel = controller.methods.some(m => m.usesGlobalType);
+    // Response types are emitted with the `__model.` prefix, so detect model use
+    // from the actual response type rather than the (param-oriented) usesGlobalType.
+    const usesModel = controller.methods.some(m => String(m.responseDef.type).includes('__model'));
+    // Param interfaces (e.g. ListPetsParams) are declared+exported in the controller file.
+    const paramTypes = Array.from(new Set(
+      controller.methods
+        .filter(m => Object.keys(m.paramGroups).length > 0)
+        .map(m => `${_.upperFirst(m.simpleName)}Params`)
+    ));
+    const serviceImport = paramTypes.length
+      ? `import { ${name}Service, ${paramTypes.join(', ')} } from '../../${conf.apiDir}/${name}';`
+      : `import { ${name}Service } from '../../${conf.apiDir}/${name}';`;
 
     controller.methods.forEach(m => {
       const simpleName = m.simpleName;
@@ -54,25 +65,33 @@ export function generateRepositories(config: Config, controllers: ProcessedContr
     if (usesModel) {
       abstractContent += `import * as __${conf.modelFile} from '../../${conf.modelFile}';\n`;
     }
-    abstractContent += `import { ${name}Service } from '../../${conf.apiDir}/${name}';\n\n`;
+    abstractContent += `${serviceImport}\n\n`;
     abstractContent += `export abstract class ${repoName} {\n`;
     abstractContent += methodSignatures.join('\n\n');
     abstractContent += `\n}\n`;
 
     // Implementation
     let implContent = '';
-    implContent += `import { Injectable } from '@angular/core';\n`;
+    implContent += config.profile.inject
+      ? `import { Injectable, inject } from '@angular/core';\n`
+      : `import { Injectable } from '@angular/core';\n`;
     implContent += `import { Observable } from 'rxjs';\n`;
     if (usesModel) {
       implContent += `import * as __${conf.modelFile} from '../../${conf.modelFile}';\n`;
     }
-    implContent += `import { ${name}Service } from '../../${conf.apiDir}/${name}';\n`;
+    implContent += `${serviceImport}\n`;
     implContent += `import { ${repoName} } from './${repoName}';\n\n`;
-    implContent += `@Injectable()\n`;
+    implContent += config.profile.providedInRoot
+      ? `@Injectable({ providedIn: 'root' })\n`
+      : `@Injectable()\n`;
     implContent += `export class ${repoImplName} extends ${repoName} {\n`;
-    implContent += `  constructor(private service: ${name}Service) {\n`;
-    implContent += `    super();\n`;
-    implContent += `  }\n\n`;
+    if (config.profile.inject) {
+      implContent += `  private service = inject(${name}Service);\n\n`;
+    } else {
+      implContent += `  constructor(private service: ${name}Service) {\n`;
+      implContent += `    super();\n`;
+      implContent += `  }\n\n`;
+    }
     implContent += methodImplementations.join('\n\n');
     implContent += `\n}\n`;
 

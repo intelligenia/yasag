@@ -48,6 +48,13 @@ export function normalizeOpenApi3(schema: any): any {
     result.paths = normalizePaths(schema.paths, components);
   }
 
+  // Strip the common mount segment from path keys. Swagger 2.0 (drf-yasg) carried
+  // the mount in `basePath` (e.g. `/api`) with bare path keys (`/permissions/`);
+  // OAS3 (drf-spectacular) drops basePath and bakes the mount into every path key
+  // (`/api/permissions/`). yasag builds request URLs as `apiUrl + pathKey` and
+  // `apiUrl` is already `/api`, so an un-stripped OAS3 path yields `/api/api/...`.
+  stripCommonMountPrefix(result);
+
   // Ensure all operations have tags
   ensureOperationTags(result);
 
@@ -81,16 +88,17 @@ function parseServers(schema: any, result: any) {
   }
 
   try {
-    // Handle relative URLs
-    if (serverUrl.startsWith('/')) {
-      result.host = 'localhost';
-      result.basePath = serverUrl;
-      result.schemes = ['https'];
-    } else if (serverUrl.startsWith('//')) {
+    // Handle relative URLs. Check protocol-relative ('//host') before
+    // path-relative ('/path'), since '//host' also starts with '/'.
+    if (serverUrl.startsWith('//')) {
       // Protocol-relative URL
       result.host = serverUrl.replace(/^\/\//, '').split('/')[0];
       const pathStart = serverUrl.indexOf('/', 2);
       result.basePath = pathStart >= 0 ? serverUrl.slice(pathStart) : '';
+      result.schemes = ['https'];
+    } else if (serverUrl.startsWith('/')) {
+      result.host = 'localhost';
+      result.basePath = serverUrl;
       result.schemes = ['https'];
     } else {
       const url = new URL(serverUrl);
@@ -162,9 +170,29 @@ function normalizeSchemaObject(schema: any): any {
     Object.assign(result, merged);
   }
 
-  // Handle oneOf/anyOf - normalize recursively
+  // Handle oneOf - collapse drf-spectacular idioms into a single translatable type.
+  // drf-spectacular expresses nullable/blank enums and fields as oneOf unions that
+  // carry no top-level `type`/`$ref`, which crashes the downstream translateType.
+  //   oneOf:[X, NullEnum, BlankEnum]  -> X + x-nullable      (nullable enum, 87 cases)
+  //   oneOf:[{string,...},{string,maxLength:0}] -> string    (blank-or-value, 3 cases)
+  //   oneOf:[object, object, ...] (genuine union) -> any     (e.g. GeoJSON coords)
   if (result.oneOf && Array.isArray(result.oneOf)) {
-    result.oneOf = result.oneOf.map(normalizeSchemaObject);
+    const members = result.oneOf;
+    const hasNullish = members.some(isNullishMember);
+    const real = members.filter((m: any) => !isNullishMember(m));
+    delete result.oneOf;
+
+    if (real.length === 1) {
+      Object.assign(result, normalizeSchemaObject(real[0]));
+      if (hasNullish) result['x-nullable'] = true;
+    } else if (real.length >= 1 && real.every((m: any) => m.type === 'string')) {
+      result.type = 'string';
+      if (hasNullish) result['x-nullable'] = true;
+    } else {
+      // Genuine union or all-null-ish: no single translatable type -> any.
+      result.type = 'any';
+      if (hasNullish) result['x-nullable'] = true;
+    }
   }
   if (result.anyOf && Array.isArray(result.anyOf)) {
     // OAS 3.1 uses anyOf for nullable: anyOf: [{type: X}, {type: "null"}]
@@ -222,7 +250,49 @@ function normalizeSchemaObject(schema: any): any {
   // Remove OAS 3.x specific fields not relevant
   delete result.externalDocs;
 
+  // Catch-all: anything left with no translatable type (`{}`, `{nullable:true}`,
+  // free-form objects) maps to `any` so the generator never sees an undefined type.
+  if (isUntypedSchema(result)) {
+    result.type = 'any';
+  }
+
   return result;
+}
+
+/**
+ * A oneOf member that contributes no value type: the drf-spectacular NullEnum
+ * (`enum:[null]`) / BlankEnum (`enum:['']`) helpers, or an inline null/blank.
+ */
+function isNullishMember(m: any): boolean {
+  if (!m || typeof m !== 'object') return true;
+  if (m.type === 'null') return true;
+  if (/(?:^|\/)(Null|Blank)Enum$/.test(m.$ref || '')) return true;
+  if (Array.isArray(m.enum) && m.enum.every((v: any) => v === null || v === '')) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * A schema carrying nothing the generator can translate into a type: no type,
+ * $ref, enum, composition, properties, items or additionalProperties. These
+ * (`{}`, `{nullable:true}`, empty maps/arrays) crash the downstream
+ * translateType and are mapped to `any`.
+ */
+function isUntypedSchema(s: any): boolean {
+  return (
+    !!s &&
+    typeof s === 'object' &&
+    !s.type &&
+    !s.$ref &&
+    !s.enum &&
+    !s.properties &&
+    !s.oneOf &&
+    !s.anyOf &&
+    !s.allOf &&
+    !s.items &&
+    !s.additionalProperties
+  );
 }
 
 /**
@@ -460,6 +530,11 @@ function normalizeParameter(param: any, components: any): any {
 /**
  * Converts requestBody to Swagger 2.0 body/formData parameters.
  * Handles all common content types.
+ *
+ * OAS3 requestBodies carry no param name, so the synthesized body param is
+ * named `data` — matching the fork's Swagger 2.0 passthrough convention (drf
+ * named it `data`) and the existing generated client + repository layer, which
+ * submit `{ data: ... }`. Renaming to `body` would churn every repository.
  */
 function normalizeRequestBody(requestBody: any): any[] {
   if (!requestBody || !requestBody.content) return [];
@@ -490,7 +565,7 @@ function normalizeRequestBody(requestBody: any): any[] {
     const schema = normalizeSchemaObject(jsonMediaType.schema);
     return [{
       in: 'body',
-      name: 'body',
+      name: 'data',
       description,
       required,
       schema,
@@ -503,7 +578,7 @@ function normalizeRequestBody(requestBody: any): any[] {
     const schema = normalizeSchemaObject(xmlMediaType.schema);
     return [{
       in: 'body',
-      name: 'body',
+      name: 'data',
       description,
       required,
       schema,
@@ -525,7 +600,7 @@ function normalizeRequestBody(requestBody: any): any[] {
   if (content['text/plain']) {
     return [{
       in: 'body',
-      name: 'body',
+      name: 'data',
       description,
       required,
       schema: { type: 'string' },
@@ -538,7 +613,7 @@ function normalizeRequestBody(requestBody: any): any[] {
     const schema = normalizeSchemaObject(wildcard.schema);
     return [{
       in: 'body',
-      name: 'body',
+      name: 'data',
       description,
       required,
       schema,
@@ -610,7 +685,7 @@ function normalizeFormData(mediaType: any, required: boolean, description: strin
   // Fallback: single body param
   return [{
     in: 'body',
-    name: 'body',
+    name: 'data',
     description,
     required,
     schema: normalizeSchemaObject(schema),
@@ -659,6 +734,34 @@ function normalizeResponses(responses: any, components: any): any {
   });
 
   return result;
+}
+
+/**
+ * Strips the single leading path segment shared by every path key (the API
+ * mount point, e.g. `/api`), reconstructing the Swagger-2.0 basePath split that
+ * yasag's URL templates expect. Conservative: only strips when ALL paths share
+ * the same first segment and keep content after it, so a real endpoint is never
+ * collapsed away. No-op when paths already diverge at the root.
+ */
+function stripCommonMountPrefix(result: any) {
+  const keys = Object.keys(result.paths || {});
+  if (keys.length < 2) return;
+
+  const firstSegment = keys[0].split('/')[1];
+  if (!firstSegment) return;
+  const prefix = `/${firstSegment}`;
+
+  // Every path must live under the same mount and have a remainder after it.
+  if (!keys.every((k) => k.startsWith(`${prefix}/`))) return;
+
+  const stripped: any = {};
+  for (const k of keys) {
+    stripped[k.slice(prefix.length)] = result.paths[k];
+  }
+  result.paths = stripped;
+  result.basePath = result.basePath && result.basePath !== '/'
+    ? result.basePath
+    : prefix;
 }
 
 /**

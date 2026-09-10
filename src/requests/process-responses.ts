@@ -43,7 +43,7 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
   }
 
   const property = _.map(properties, 'property');
-  let format_array = _.map(properties, 'format');
+  const format_array = _.map(properties, 'format');
   const enumDeclaration = _.map(properties, 'enumDeclaration').filter(Boolean).join('\n\n');
   const usesGlobalType = properties.some(p => !p.native);
 

@@ -8,12 +8,16 @@ import { writeFile } from "../utils";
  */
 export function createUtils(config: Config) {
   const formArray = config.typedForms ? "UntypedFormArray" : "FormArray";
+  // Tree-shakable ESM import for modern targets; CommonJS deep path for legacy.
+  const cloneDeepImport = config.profile.standalone
+    ? "import { cloneDeep } from 'lodash-es';"
+    : "import cloneDeep from 'lodash/cloneDeep';";
 
   const content = `
 
   import { HttpParams } from "@angular/common/http";
   import { ${formArray}, FormGroup } from "@angular/forms";
-  import cloneDeep from 'lodash/cloneDeep';
+  ${cloneDeepImport}
 
   export function getQueryParams(queryParamBase): HttpParams {
 
@@ -21,14 +25,16 @@ export function createUtils(config: Config) {
     Object.entries(queryParamBase).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
-          let val = '';
-          value.forEach(v => val += v + ',');
-          if (val.length > 0 ) {
-            val = val.slice(0, val.length - 1);
+          // Omit empty arrays: sending 'key=' makes drf-spectacular filters
+          // reject it as "'' is not a valid value" (400). Absent = no filter.
+          if (value.length > 0) {
+            queryParams = queryParams.set(key, value.join(','));
           }
-          queryParams = queryParams.set(key, val);
         } else if (typeof value === 'string') {
-          queryParams = queryParams.set(key, value);
+          // Same reason: omit empty-string filters instead of sending 'key='.
+          if (value !== '') {
+            queryParams = queryParams.set(key, value);
+          }
         } else {
           queryParams = queryParams.set(key, JSON.stringify(value));
         }

@@ -23,7 +23,8 @@ import {
  */
 export function processMethod(
   method: ControllerMethod,
-  unwrapSingleParamMethods: boolean
+  unwrapSingleParamMethods: boolean,
+  emitResource = false,
 ): MethodOutput {
   let methodDef = "";
   let interfaceDef = "";
@@ -31,7 +32,6 @@ export function processMethod(
   const allowed: string[] = conf.allowedParams[method.methodName];
   let paramSeparation: string[] = [];
   let paramsSignature = "";
-  let params: string;
   let usesGlobalType = false;
   let usesQueryParams: boolean;
   let paramTypes: string[] = [];
@@ -62,16 +62,16 @@ export function processMethod(
     }
   }
 
-  params = getRequestParams(
+  const params = getRequestParams(
     paramTypes,
     method.methodName,
     method.responseDef.type,
-    method.responseDef
+    method.responseDef,
   );
 
   methodDef += "\n";
   methodDef += makeComment(
-    [method.summary, method.description].filter(Boolean)
+    [method.summary, method.description].filter(Boolean),
   );
   let responseType = method.responseDef.type;
   if (responseType === "string") {
@@ -99,6 +99,31 @@ export function processMethod(
 
   methodDef += splitParamsMethod;
 
+  // Signal-based resource reader for GET operations. Delegates to the Observable
+  // method above (via rxResource) so no request/param logic is duplicated or lost.
+  if (emitResource && methodName === "get") {
+    const paramsType = _.upperFirst(`${simpleName}Params`);
+    const hasParams = paramsSignature.startsWith("params:");
+    methodDef += "\n\n";
+    if (hasParams) {
+      methodDef += `${simpleName}Resource(params: Signal<${paramsType} | undefined>) {\n`;
+      methodDef += indent(`return rxResource({\n`);
+      methodDef += indent(`params: () => params(),\n`, 2);
+      methodDef += indent(
+        `stream: ({ params }) => this.${simpleName}(params),\n`,
+        2,
+      );
+      methodDef += indent(`});\n`);
+      methodDef += `}`;
+    } else {
+      methodDef += `${simpleName}Resource() {\n`;
+      methodDef += indent(
+        `return rxResource({ stream: () => this.${simpleName}() });\n`,
+      );
+      methodDef += `}`;
+    }
+  }
+
   if (method.responseDef.enumDeclaration) {
     if (interfaceDef) interfaceDef += "\n";
     interfaceDef += `${method.responseDef.enumDeclaration}\n`;
@@ -119,16 +144,16 @@ export function processMethod(
 
 function getSplitParamsMethod(
   method: ControllerMethod,
-  processedParams: ProcessParamsOutput
+  processedParams: ProcessParamsOutput,
 ) {
   let splitParamsMethod = "";
 
   const splitParamsSignature = getSplitParamsSignature(processedParams);
-  splitParamsMethod += `\n${method.simpleName}_(${splitParamsSignature}): Observable<${method.responseDef.type}> {\n`;
+  splitParamsMethod += `\n${method.simpleName}_(${splitParamsSignature}, context?: HttpContext): Observable<${method.responseDef.type}> {\n`;
 
   const propAssignments = getPropertyAssignments(method.paramDef);
   splitParamsMethod += indent(
-    `return this.${method.simpleName}(${propAssignments});\n`
+    `return this.${method.simpleName}(${propAssignments}, false, context);\n`,
   );
   splitParamsMethod += "}\n";
 
@@ -142,11 +167,11 @@ function getSplitParamsMethod(
  */
 function getParamsSignature(
   processedParams: ProcessParamsOutput,
-  paramsType: string
+  paramsType: string,
 ) {
   return (
     (!processedParams.isInterfaceEmpty ? `params: ${paramsType}, ` : "") +
-    "multipart = false"
+    "multipart = false, context?: HttpContext"
   );
 }
 
@@ -219,7 +244,7 @@ function getRequestParams(
   paramTypes: string[],
   methodName: string,
   responseType: string,
-  responseObject: ResponseDef
+  responseObject: ResponseDef,
 ) {
   let res = "";
 
@@ -247,8 +272,15 @@ function getRequestParams(
       optionParams += "responseType: 'text'";
     }
   }
+  // Always emitted, even when undefined: HttpClient falls back to a fresh
+  // HttpContext, and having the parameter on every method is what lets a caller
+  // mark a request (e.g. as a screen's primary load) without the
+  // generator needing to know which endpoints care.
   if (optionParams.length > 0) {
-    res += `, {${optionParams}}`;
+    optionParams += ", ";
   }
+  optionParams += "context";
+
+  res += `, {${optionParams}}`;
   return res;
 }

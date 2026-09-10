@@ -1,3 +1,4 @@
+export { parseSpec } from './parse-spec';
 export { SpecVersion, detectVersion } from './openapi-detector';
 export { normalizeOpenApi3 } from './openapi3-normalizer';
 export { normalizeSwagger1 } from './swagger1-normalizer';

@@ -3,11 +3,12 @@ import * as fs from "fs";
 import * as conf from "./conf";
 
 import * as path from "path";
-import { normalizeSchema } from "./adapters";
+import { normalizeSchema, parseSpec } from "./adapters";
 import { generateDomain, generateRepositories, generateUsecases } from "./clean-arch";
 import { processDefinitions } from "./definitions";
 import { processPaths } from "./requests/process-paths";
 import { NormalizedSchema } from "./types";
+import { NgTarget, TargetProfile, profileFor, DEFAULT_TARGET } from "./target-profile";
 import { createDir, emptyDir, out, processHeader, TermColors } from "./utils";
 
 export interface Config {
@@ -17,7 +18,10 @@ export interface Config {
   unwrapSingleParamMethods: boolean;
   typedForms: boolean;
   cleanArchitecture: boolean;
+  /** derived alias of profile.standalone (kept for downstream compatibility) */
   standalone: boolean;
+  /** Angular output target profile driving idiom emission */
+  profile: TargetProfile;
 }
 
 /**
@@ -47,26 +51,20 @@ export function generate(
   readOnly = "",
   environmentCache = conf.environmentCache,
   cleanArchitecture = false,
-  standalone = false
+  target: NgTarget = DEFAULT_TARGET,
+  untypedForms = false
 ) {
+  const profile = profileFor(target);
+  // Typed reactive forms follow the target default unless explicitly overridden.
+  const effectiveTypedForms = untypedForms
+    ? false
+    : typedForms || profile.typedFormsDefault;
   let schema: NormalizedSchema;
 
   try {
     const content = fs.readFileSync(src).toString();
-    // Try JSON first, then attempt basic YAML-like parsing
-    try {
-      schema = JSON.parse(content);
-    } catch {
-      // If not valid JSON, try to detect if it's YAML
-      if (content.match(/^(swagger|openapi|swaggerVersion)\s*:/m)) {
-        out(
-          `${src} appears to be YAML. Please convert to JSON first (e.g. using yq or an online converter).`,
-          TermColors.red
-        );
-        return;
-      }
-      throw new SyntaxError(`Not valid JSON: ${src}`);
-    }
+    // Accept JSON or YAML input (parseSpec tries JSON first, then YAML).
+    schema = parseSpec(content);
   } catch (e) {
     if (e instanceof SyntaxError) {
       out(
@@ -100,9 +98,10 @@ export function generate(
     dest,
     generateStore,
     unwrapSingleParamMethods,
-    typedForms,
+    typedForms: effectiveTypedForms,
     cleanArchitecture,
-    standalone,
+    standalone: profile.standalone,
+    profile,
   };
 
   if (!fs.existsSync(dest)) fs.mkdirSync(dest);

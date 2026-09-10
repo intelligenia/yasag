@@ -73,10 +73,27 @@ export function processDefinition(def: Definition, name: string, config: Config)
   name = normalizeDef(name);
   const nameModel = name;
   let output = '';
+
+  // Enum-only schema (drf-spectacular/OAS3 hoists enums into named component
+  // schemas, e.g. AdoptedMeasureEnum, NullEnum). Emit a TS union type, not an
+  // empty interface — otherwise every referencing property degrades to `{}`.
+  const enumDef = def as unknown as { enum?: unknown[]; type?: string; description?: string };
+  if (Array.isArray(enumDef.enum)) {
+    if (enumDef.description) output += `/** ${enumDef.description} */\n`;
+    const numeric = enumDef.type === 'integer' || enumDef.type === 'number';
+    const members = enumDef.enum.map((v) =>
+      v === null ? 'null' : numeric ? String(v) : `'${v}'`,
+    );
+    output += `export type ${name} =\n` + indent(members.join(' |\n')) + ';\n';
+    const enumFilename = path.join(config.dest, conf.defsDir, `${name}.ts`);
+    writeFile(enumFilename, output, config.header);
+    return {name, def};
+  }
+
   const properties = _.map(def.properties, (v, k) => processProperty(v, k, name, def.required, true, nameModel));
   // conditional import of global types
   if (properties.some(p => !p.native)) {
-    output += `import * as __${conf.modelFile} from \'../${conf.modelFile}\';\n\n`;
+    output += `import * as __${conf.modelFile} from '../${conf.modelFile}';\n\n`;
   }
   if (def.description) output += `/** ${def.description} */\n`;
 

@@ -3,7 +3,7 @@
 import * as conf from "./conf";
 import { generate } from "./generate";
 
-const { program } = require("commander");
+import { program } from "commander";
 
 program
   .option("-s, --src <source>", `Source directory, default: ${conf.apiFile}`)
@@ -36,7 +36,11 @@ program
   )
   .option(
     "-t, --typed-forms",
-    `Add types to FormControls, default: ${conf.typeForms}`
+    `Force typed FormControls on (default follows --target: on for ng22/ng16, off for legacy)`
+  )
+  .option(
+    "--untyped-forms",
+    `Force untyped FormControls (overrides the target default)`
   )
   .option(
     "-r, --read-only <ending>",
@@ -51,8 +55,9 @@ program
     "Generate clean architecture layers (domain, data, usecases)"
   )
   .option(
-    "--standalone",
-    "Generate standalone-compatible code for Angular 17+ (providedIn: 'root', no NgModules)"
+    "--target <ng>",
+    "Angular output target: ng22 (default, standalone + inject + signals + httpResource), ng16 (standalone + inject, no signals/httpResource), legacy (NgModules + constructor DI)",
+    "ng22"
   )
   .parse(process.argv);
 
@@ -72,5 +77,6 @@ generate(
   options.readOnly,
   options.environmentCache,
   options.cleanArchitecture,
-  options.standalone
+  options.target,
+  options.untypedForms
 );

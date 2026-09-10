@@ -11,6 +11,7 @@ import { createServiceGetAbstractClass } from "../forms/service-get-abstract";
 import { createServicePostAbstractClass } from "../forms/service-post-abstract";
 import { createUtils } from "../forms/yasag-utils";
 import { Config } from "../generate";
+import { ResponseDef } from "./requests.models";
 import { Method, MethodName } from "../types";
 import { writeFile } from "../utils";
 import { createConfigService } from "./config-service";
@@ -64,7 +65,7 @@ export function processPaths(
         description: method.description,
         paramDef: method.parameters,
         responses: method.responses,
-        responseDef: null,
+        responseDef: null as unknown as ResponseDef,
         basePath,
       }))
   );
@@ -88,25 +89,32 @@ export function processPaths(
   _.forEach(_.groupBy(controllers, "name"), (_methods, name) => {
     modules.push(name);
   });
-  // Create global module for forms
-  if (!config.standalone) {
-    createFormsModule(config, modules);
-  }
-  // Create the abstract class
-  createServiceGetAbstractClass(config);
-  createServicePostAbstractClass(config);
-  // Create utils
-  createUtils(config);
+  // The forms layer (per-operation form modules/services, their global module
+  // and the aggregating form-service.ts barrel) is only generated with the
+  // store enabled — see createForms() gating in process-controller. Emitting the
+  // aggregators without the per-operation files they import produces
+  // uncompilable output, so gate them together.
+  if (config.generateStore) {
+    // Create global module for forms
+    if (!config.standalone) {
+      createFormsModule(config, modules);
+    }
+    // Create the abstract classes
+    createServiceGetAbstractClass(config);
+    createServicePostAbstractClass(config);
 
-  let content = "";
-  controllers.forEach(
-    (method) =>
-      (content += `export * from './forms/${_.kebabCase(method.name)}/${
-        method.simpleName
-      }/${method.simpleName}.service';\n`)
-  );
-  const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
-  writeFile(allFormServiceFileName, content, config.header);
+    let content = "";
+    controllers.forEach(
+      (method) =>
+        (content += `export * from './forms/${_.kebabCase(method.name)}/${
+          method.simpleName
+        }/${method.simpleName}.service';\n`)
+    );
+    const allFormServiceFileName = path.join(config.dest, `form-service.ts`);
+    writeFile(allFormServiceFileName, content, config.header);
+  }
+  // Create utils (imported by controllers, needed regardless of the forms layer)
+  createUtils(config);
   // apiconfig.service.ts
   createConfigService(config, environmentAPI, environmentCache);
 

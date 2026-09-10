@@ -61,6 +61,6 @@ export const adHocExceptions: {
   [key: string]: { [key: string]: [RegExp, string] };
 } = {
   api: {
-    Help: [/^  itemNumbers\?: ref;$/m, "  itemNumbers?: number[]"],
+    Help: [/^ {2}itemNumbers\?: ref;$/m, "  itemNumbers?: number[]"],
   },
 };

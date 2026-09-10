@@ -9,9 +9,16 @@ import { writeFile } from "../utils";
  */
 export function createServiceGetAbstractClass(config: Config) {
   const ngZoneType = config.standalone ? 'NgZone | null' : 'NgZone';
+  const sig = config.profile.signals;
+  const sigCoreImport = sig ? ', Signal' : '';
+  const sigInteropImport = sig ? `\n  import { toSignal } from '@angular/core/rxjs-interop';` : '';
+  const sigFields = sig ? `\n    loading!: Signal<boolean>;\n    serverErrors!: Signal<any>;` : '';
+  const sigInit = sig
+    ? `\n      this.loading = toSignal(this.loading$, { initialValue: false });\n      this.serverErrors = toSignal(this.serverErrors$);`
+    : '';
   const content = `
   import { FormGroup } from '@angular/forms';
-  import { NgZone } from '@angular/core';
+  import { NgZone${sigCoreImport} } from '@angular/core';${sigInteropImport}
   import { ReplaySubject, Observable, throwError } from 'rxjs';
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
@@ -20,7 +27,7 @@ export function createServiceGetAbstractClass(config: Config) {
   export abstract class YASAGGetFormService<Type> {
     defaultValue: any;
     serverErrors$: Observable<any>;
-    loading$: Observable<boolean>;
+    loading$: Observable<boolean>;${sigFields}
     currentValue: any;
     patchInitialValue: any;
     form: FormGroup;
@@ -48,7 +55,7 @@ export function createServiceGetAbstractClass(config: Config) {
       this.serverErrorsSubject = new ReplaySubject<any>(1);
       this.serverErrors$ = this.serverErrorsSubject.asObservable();
       this.loadingSubject = new ReplaySubject<boolean>(1);
-      this.loading$ = this.loadingSubject.asObservable();
+      this.loading$ = this.loadingSubject.asObservable();${sigInit}
       this.cacheSub = {};
       this.defaultValue = this.form.value;
     }

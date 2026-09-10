@@ -9,9 +9,16 @@ import { writeFile } from "../utils";
  */
 export function createServicePostAbstractClass(config: Config) {
   const ngZoneType = config.standalone ? 'NgZone | null' : 'NgZone';
+  const sig = config.profile.signals;
+  const sigCoreImport = sig ? ', Signal' : '';
+  const sigInteropImport = sig ? `\n  import { toSignal } from '@angular/core/rxjs-interop';` : '';
+  const sigFields = sig ? `\n    loading!: Signal<boolean>;\n    serverErrors!: Signal<any>;` : '';
+  const sigInit = sig
+    ? `\n      this.loading = toSignal(this.loading$, { initialValue: false });\n      this.serverErrors = toSignal(this.serverErrors$);`
+    : '';
   const content = `
   import { AbstractControl, FormGroup } from '@angular/forms';
-  import { NgZone } from '@angular/core';
+  import { NgZone${sigCoreImport} } from '@angular/core';${sigInteropImport}
   import { ReplaySubject, Observable, throwError } from 'rxjs';
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
@@ -20,7 +27,7 @@ export function createServicePostAbstractClass(config: Config) {
   export abstract class YASAGPostFormService<Type> {
     defaultValue: any;
     serverErrors$: Observable<any>;
-    loading$: Observable<boolean>;
+    loading$: Observable<boolean>;${sigFields}
     currentValue: any;
     patchInitialValue: any;
     form: FormGroup;
@@ -30,6 +37,7 @@ export function createServicePostAbstractClass(config: Config) {
     protected loadingSubject: ReplaySubject<boolean>;
     protected cacheSub: any;
     protected cache: string;
+    private static requestSeq = 0;
 
 
     constructor(className: string, protected  apiConfigService: APIConfigService, protected  ngZone: ${ngZoneType}) {
@@ -48,8 +56,18 @@ export function createServicePostAbstractClass(config: Config) {
       this.serverErrorsSubject = new ReplaySubject<any>(1);
       this.serverErrors$ = this.serverErrorsSubject.asObservable();
       this.loadingSubject = new ReplaySubject<boolean>(1);
-      this.loading$ = this.loadingSubject.asObservable();
+      this.loading$ = this.loadingSubject.asObservable();${sigInit}
       this.cacheSub = {};
+      // The server-assigned id is readOnly on create (POST): the client never
+      // provides it, so a required validator on it would keep the form invalid
+      // forever and block the submit button. Strip it here for every create form.
+      ['id', 'data.id'].forEach(controlPath => {
+        const idControl = this.form.get(controlPath);
+        if (idControl) {
+          idControl.clearValidators();
+          idControl.updateValueAndValidity({ emitEvent: false });
+        }
+      });
       this.defaultValue = this.form.value;
     }
 
@@ -74,10 +92,11 @@ export function createServicePostAbstractClass(config: Config) {
       }
 
 
-      const cacheKey = JSON.stringify(value) + cache + new Date().getTime();
-      if ( this.cacheSub[cacheKey] ) {
-        return this.cacheSub[cacheKey].asObservable();
-      }
+      // Strictly unique per call. A millisecond timestamp collides when several
+      // writes are submitted in the same tick (e.g. saving N new rows of a form
+      // array at once): identical payloads reused the in-flight subject, so only
+      // ONE request reached the server and N-1 rows were silently never created.
+      const cacheKey = JSON.stringify(value) + cache + ++YASAGPostFormService.requestSeq;
       this.cacheSub[cacheKey] = new ReplaySubject<Type>(1);
       const subject = this.cacheSub[cacheKey];
       let cache_hit = false;

@@ -16,6 +16,28 @@ export interface ProcessParamsOutput {
 }
 
 /**
+ * A detail action that also carries the list filterset gets the same name
+ * twice: once as the path parameter and once as a query filter (drf-spectacular
+ * emits `id` in both for `/protocol_template/{id}/audit/`, since
+ * `ProtocolTemplateFilter` filters by `id`). Two declarations of one property in
+ * the same interface is a TS2300/TS2687 error — lint and the specs stay green
+ * and only `nx build` catches it, so dedupe here at the source.
+ *
+ * The path parameter wins: it is the one the request actually interpolates, and
+ * it is required, so keeping the optional query twin would also widen the type.
+ */
+function dedupeByName(def: Parameter[]): Parameter[] {
+  const byName = new Map<string, Parameter>();
+  for (const p of def) {
+    const kept = byName.get(p.name);
+    if (!kept || (kept.in !== "path" && p.in === "path")) {
+      byName.set(p.name, p);
+    }
+  }
+  return [...byName.values()];
+}
+
+/**
  * Transforms input parameters to interfaces definition
  * @param def definition
  * @param paramsType name of the type
@@ -29,7 +51,7 @@ export function processParams(
 
   paramDef += `export interface ${paramsType} {\n`;
 
-  const params = _.map(def, (p) =>
+  const params = _.map(dedupeByName(def), (p) =>
     processProperty(parameterToSchema(p), p.name, paramsType, p.required)
   );
   const isInterfaceEmpty = !params.length;

@@ -32,18 +32,28 @@ export function generateUsecases(config: Config, controllers: ProcessedControlle
       const paramsType = hasParams ? `${_.upperFirst(simpleName)}Params` : '';
       const paramsArg = hasParams ? `params: ${paramsType}` : '';
       const callArgs = hasParams ? 'params' : '';
-      const usesModel = m.usesGlobalType;
+      // Response type carries the `__model.` prefix when it references a model.
+      const usesModel = String(responseType).includes('__model');
 
       let content = '';
-      content += `import { Injectable } from '@angular/core';\n`;
+      content += config.profile.inject
+        ? `import { Injectable, inject } from '@angular/core';\n`
+        : `import { Injectable } from '@angular/core';\n`;
       content += `import { Observable } from 'rxjs';\n`;
       if (usesModel) {
         content += `import * as __${conf.modelFile} from '../../${conf.modelFile}';\n`;
       }
+      if (hasParams) {
+        content += `import { ${paramsType} } from '../../${conf.apiDir}/${name}';\n`;
+      }
       content += `import { ${repoName} } from '../../${conf.dataDir}/repositories/${repoName}';\n\n`;
-      content += `@Injectable()\n`;
+      content += config.profile.providedInRoot
+        ? `@Injectable({ providedIn: 'root' })\n`
+        : `@Injectable()\n`;
       content += `export class ${usecaseName} {\n`;
-      content += `  constructor(private repository: ${repoName}) {}\n\n`;
+      content += config.profile.inject
+        ? `  private repository = inject(${repoName});\n\n`
+        : `  constructor(private repository: ${repoName}) {}\n\n`;
       content += `  execute(${paramsArg}): Observable<${responseType}> {\n`;
       content += `    return this.repository.${simpleName}(${callArgs});\n`;
       content += `  }\n`;
