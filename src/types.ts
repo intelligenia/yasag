@@ -43,6 +43,14 @@ interface ParameterSchemaBase {
   type?: string;
   uniqueItems?: boolean;
   "x-nullable"?: boolean;
+  exclusiveMinimum?: number | boolean;
+  exclusiveMaximum?: number | boolean;
+  multipleOf?: number;
+  minItems?: number;
+  maxItems?: number;
+  readOnly?: boolean;
+  writeOnly?: boolean;
+  example?: any;
 }
 
 // https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#parameterObject
@@ -62,6 +70,10 @@ export interface Schema extends ParameterSchemaBase {
   required?: string[];
   type?: string;
   format?: string;
+  nullable?: boolean;
+  oneOf?: Schema[];
+  anyOf?: Schema[];
+  allOf?: Schema[];
   properties?: {
     [key: string]: Schema;
   };
@@ -89,3 +101,29 @@ export type NativeNames =
   | "string";
 
 export type FileType = "ts" | "html" | "scss";
+
+/**
+ * Internal normalized schema format (Swagger 2.0-compatible structure).
+ * All adapters convert their input to this format before processing.
+ */
+export interface NormalizedSchema {
+  swagger: string;
+  info: {
+    title?: string;
+    version?: string;
+    description?: string;
+    [key: string]: any;
+  };
+  host: string;
+  basePath: string;
+  schemes?: string[];
+  paths: {
+    [path: string]: any;
+  };
+  definitions: {
+    [name: string]: any;
+  };
+  tags?: Array<{ name: string; description?: string }>;
+  consumes?: string[];
+  produces?: string[];
+}

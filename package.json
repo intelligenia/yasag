@@ -11,14 +11,18 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "start:debug": "node -r ts-node/register --inspect-brk src/index.ts",
-    "prebuild": "rm -r dist",
+    "prebuild": "rm -rf dist",
     "build": "tsc --outDir dist",
     "buildwin": "del dist && tsc --outDir dist",
     "postbuild": "",
     "preversion": "npm run build",
     "postversion": "git status",
-    "lint": "tslint -p tsconfig.json",
-    "lint:fix": "tslint -p tsconfig.json --fix"
+    "test": "npx tsx --test tests/*.test.ts",
+    "e2e:setup": "cd tests/e2e-consumers/ng22 && npm i --no-audit --no-fund && cd ../ng16 && npm i --no-audit --no-fund && cd ../legacy && npm i --no-audit --no-fund",
+    "e2e:matrix": "npx tsx --test tests/matrix.e2e.test.ts",
+    "check": "npm run lint && npm run build && npm test",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "repository": {
     "type": "git",
@@ -41,28 +45,32 @@
   "homepage": "https://github.com/intelligenia/yasag#readme",
   "dependencies": {
     "commander": "^12.1.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@angular/cli": "^16.2.12",
-    "@angular/common": "^16.2.12",
-    "@angular/core": "^16.2.12",
-    "@angular/forms": "^16.2.12",
-    "@angular/platform-browser": "^16.2.12",
+    "@angular/cli": "^22.0.0",
+    "@angular/common": "^22.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/forms": "^22.0.0",
+    "@angular/platform-browser": "^22.0.0",
+    "@eslint/js": "^9.39.4",
     "@types/commander": "^2.12.2",
     "@types/lodash": "^4.17.7",
-    "@types/node": "^18.19.42",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.39.4",
+    "lodash-es": "^4.18.1",
     "rxjs": "^7.8.0",
     "ts-node": "^10.9.1",
-    "tslint": "^6.1.3",
-    "tslint-eslint-rules": "^5.4.0",
-    "typescript": "4.9.3",
-    "zone.js": "^0.13.3"
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.62.1",
+    "zone.js": "^0.15.0"
   },
   "peerDependencies": {
-    "@angular/common": ">= 8.0.0",
-    "@angular/core": ">= 8.0.0",
-    "@angular/platform-browser": ">= 8.0.0",
+    "@angular/common": ">= 16.0.0",
+    "@angular/core": ">= 16.0.0",
+    "@angular/platform-browser": ">= 16.0.0",
     "rxjs": ">= 7.8.0",
     "zone.js": ">= 0.13.3"
   }

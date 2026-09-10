@@ -3,8 +3,11 @@ import {Config} from '../generate';
 import {writeFile} from '../utils';
 
 export function createConfigService(config: Config, environmentAPI: string, environmentCache: string) {
+  const useInject = config.profile.inject;
   let content = '';
-  content += `import { Injectable } from '@angular/core';\n`;
+  content += useInject
+    ? `import { Injectable, inject } from '@angular/core';\n`
+    : `import { Injectable } from '@angular/core';\n`;
   content += `import { environment } from 'environments/environment';\n`;
   content += `import {Observable, ReplaySubject} from 'rxjs';\n`;
   content += '\n';
@@ -23,10 +26,14 @@ export function createConfigService(config: Config, environmentAPI: string, envi
   content += '  providedIn: \'root\'\n';
   content += '})\n';
   content += 'export class APIConfigService {\n';
-  content += '  public options: APIConfigServiceOptions;\n';
-  content += '  private _window: string[];\n';
-  content += '  private _cache: any;\n';
-  content += '  private _listeners: { [ k: string ]: {fs: FormService, payload: any, subject: ReplaySubject<any>} };\n';
+  content += useInject
+    ? '  public options = inject(APIConfigServiceOptions);\n'
+    : '  public options: APIConfigServiceOptions;\n';
+  content += useInject ? '  private _window: string[] = [];\n' : '  private _window: string[];\n';
+  content += useInject ? '  private _cache: any = {};\n' : '  private _cache: any;\n';
+  content += useInject
+    ? '  private _listeners: { [ k: string ]: {fs: FormService, payload: any, subject: ReplaySubject<any>} } = {};\n'
+    : '  private _listeners: { [ k: string ]: {fs: FormService, payload: any, subject: ReplaySubject<any>} };\n';
   content += '\n';
   content += '  get cache(): any {\n';
   content += '    if ( Object.keys(this._cache).length >= this.options.cacheSize && this._window.length === 0 ){\n';
@@ -43,12 +50,14 @@ export function createConfigService(config: Config, environmentAPI: string, envi
   content += '    return this._listeners;\n';
   content += '  }\n';
   content += '\n';
-  content += '  constructor( options: APIConfigServiceOptions ) {\n';
-  content += '    this.options = options;\n';
-  content += '    this.resetCache();\n';
-  content += '    this.resetListeners();\n';
-  content += '  }\n';
-  content += '\n';
+  if (!useInject) {
+    content += '  constructor( options: APIConfigServiceOptions ) {\n';
+    content += '    this.options = options;\n';
+    content += '    this.resetCache();\n';
+    content += '    this.resetListeners();\n';
+    content += '  }\n';
+    content += '\n';
+  }
   content += '  resetCache(): void {\n';
   content += '    this._cache = {};\n';
   content += '    this._window = [];\n';

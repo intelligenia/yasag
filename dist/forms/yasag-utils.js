@@ -52,6 +52,14 @@ function createUtils(config) {
     return bodyParamsWithoutUndefined;
   }
 
+  export function multipleOfValidator(factor: number) {
+    return (control: {value: any}) => {
+      const value = control.value;
+      if (value === null || value === undefined || value === '') return null;
+      return Number(value) % factor === 0 ? null : {multipleOf: {requiredMultiple: factor, actual: value}};
+    };
+  }
+
   export function addField(control:${formArray}, items: number, formGroup: FormGroup, position: number, value: any) {
     for (let i = 0; i < items; i++) {
       const fg = cloneDeep(formGroup);

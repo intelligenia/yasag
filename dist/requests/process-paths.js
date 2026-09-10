@@ -45,13 +45,20 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     })));
     const controllerFiles = _.groupBy(controllers, "name");
     conf.controllerIgnores.forEach((key) => delete controllerFiles[key]);
-    _.forEach(controllerFiles, (methods, name) => (0, process_controller_1.processController)(methods, name.replace("[", "").replace("]", ""), config, definitions, readOnly));
+    const processedControllers = [];
+    _.forEach(controllerFiles, (methods, name) => {
+        const cleanName = name.replace("[", "").replace("]", "");
+        const methodOutputs = (0, process_controller_1.processController)(methods, cleanName, config, definitions, readOnly);
+        processedControllers.push({ name: cleanName, methods: methodOutputs });
+    });
     const modules = [];
     _.forEach(_.groupBy(controllers, "name"), (_methods, name) => {
         modules.push(name);
     });
     // Create global module for forms
-    (0, forms_module_1.createFormsModule)(config, modules);
+    if (!config.standalone) {
+        (0, forms_module_1.createFormsModule)(config, modules);
+    }
     // Create the abstract class
     (0, service_get_abstract_1.createServiceGetAbstractClass)(config);
     (0, service_post_abstract_1.createServicePostAbstractClass)(config);
@@ -63,6 +70,7 @@ function processPaths(pathsWithParameters, swaggerPath, config, definitions, bas
     (0, utils_1.writeFile)(allFormServiceFileName, content, config.header);
     // apiconfig.service.ts
     (0, config_service_1.createConfigService)(config, environmentAPI, environmentCache);
+    return processedControllers;
 }
 exports.processPaths = processPaths;
 /**
@@ -98,11 +106,16 @@ function getName(method) {
 function preProcessPaths(paths) {
     Object.values(paths).forEach((pathValue) => {
         if (pathValue.parameters) {
+            const pathParams = pathValue.parameters;
             Object.keys(pathValue).forEach((key) => {
                 if (key === "parameters")
                     return;
                 const method = pathValue[key];
-                method.parameters = method.parameters.concat(pathValue.parameters);
+                const methodParams = method.parameters || [];
+                // Deduplicate: method-level params take precedence over path-level
+                const methodParamKeys = new Set(methodParams.map((p) => `${p.in}:${p.name}`));
+                const uniquePathParams = pathParams.filter((p) => !methodParamKeys.has(`${p.in}:${p.name}`));
+                method.parameters = methodParams.concat(uniquePathParams);
             });
         }
         delete pathValue.parameters;

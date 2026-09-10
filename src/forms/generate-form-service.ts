@@ -15,6 +15,29 @@ export interface FieldDefinition {
   params: string[];
 }
 
+/**
+ * Shared context for form generation, passed through the recursive
+ * walkParamOrProp / makeField chain instead of 17+ positional params.
+ */
+export interface FormGenerationContext {
+  definitions: _.Dictionary<ProcessedDefinition[]>;
+  parentTypes: string[];
+  control: string;
+  formArrayMethods: string[];
+  formValue: string;
+  formValueIF: string;
+  formArrayReset: string[];
+  formArrayPatch: string[];
+  readOnly: string;
+  config: Config;
+  formArrayParams: string;
+  subArrayReset: string[];
+  subArrayPatch: string[];
+  parent: string;
+  parents: string;
+  nameParents: string;
+}
+
 export function generateFormService(
   config: Config,
   name: string,
@@ -25,7 +48,7 @@ export function generateFormService(
   className: string,
   methodName: string,
   method: MethodOutput,
-  readOnly: string
+  readOnly: string,
 ) {
   let content = "";
   const formName = "form";
@@ -33,7 +56,7 @@ export function generateFormService(
   const formArrayPatch: string[] = [];
   const componentHTMLFileName = nodePath.join(
     formSubDirName,
-    `${simpleName}.service.ts`
+    `${simpleName}.service.ts`,
   );
 
   out(`Generating ${componentHTMLFileName}`, TermColors.default);
@@ -47,16 +70,20 @@ export function generateFormService(
     formArrayReset,
     formArrayPatch,
     readOnly,
-    config
+    config,
   );
 
   const variables = getVariables(method);
 
   // Imports
-  content += getImports(name, constructor, methodName);
+  content += getImports(name, constructor, methodName, config);
 
   // Class declaration
-  content += `@Injectable()\n`;
+  if (config.standalone) {
+    content += `@Injectable({ providedIn: 'root' })\n`;
+  } else {
+    content += `@Injectable()\n`;
+  }
   let observableType = method.responseDef.type;
   if (observableType === "string" && method.responseDef.format === "binary") {
     observableType = "Blob";
@@ -83,7 +110,7 @@ export function generateFormService(
     formName,
     formArrayReset,
     formArrayPatch,
-    methodName
+    methodName,
   );
 
   content += "}\n";
@@ -91,7 +118,12 @@ export function generateFormService(
   writeFile(componentHTMLFileName, content, config.header);
 }
 
-function getImports(name: string, constructor: string, methodName: string) {
+function getImports(
+  name: string,
+  constructor: string,
+  methodName: string,
+  config: Config,
+) {
   const imports: string[] = [];
 
   if (constructor.match(/new FormArray\(/)) imports.push("FormArray");
@@ -101,7 +133,31 @@ function getImports(name: string, constructor: string, methodName: string) {
   if (constructor.match(/new FormGroup\(/)) imports.push("FormGroup");
   if (constructor.match(/\[Validators\./)) imports.push("Validators");
 
+  if (config.standalone) {
+    let res = "import { Injectable, inject, NgZone } from '@angular/core';\n";
+    res += "import { HttpContext } from '@angular/common/http';\n";
+    if (imports.length)
+      res += `import {${imports.join(", ")}} from '@angular/forms';\n`;
+    res += "import {  Observable } from 'rxjs';\n";
+    res += `import { ${name}Service } from '../../../controllers/${name}';\n`;
+    res += `import * as __model from '../../../model';\n`;
+    res += "import { APIConfigService } from '../../../apiconfig.service';\n\n";
+    res += "import * as __utils from '../../../yasag-utils';\n\n";
+
+    if (methodName === "get") {
+      res +=
+        "import { YASAGGetFormService } from '../../yasag-get.service';\n\n";
+    } else {
+      res +=
+        "import { YASAGPostFormService } from '../../yasag-post.service';\n\n";
+    }
+
+    res += "\n";
+    return res;
+  }
+
   let res = "import { Injectable, NgZone } from '@angular/core';\n";
+  res += "import { HttpContext } from '@angular/common/http';\n";
   if (imports.length)
     res += `import {${imports.join(", ")}} from '@angular/forms';\n`;
   res += "import {  Observable } from 'rxjs';\n";
@@ -128,8 +184,8 @@ function getVariables(method: MethodOutput): string {
     if (k.startsWith("x-")) {
       content += indent(
         `static ${_.camelCase(k)} = ${JSON.stringify(
-          method.method.method[k]
-        )};\n`
+          method.method.method[k],
+        )};\n`,
       );
     }
   });
@@ -146,44 +202,66 @@ function getConstructor(
   formArrayReset: string[],
   formArrayPatch: string[],
   readOnly: string,
-  config: Config
+  config: Config,
 ) {
   const definitionsMap = _.groupBy(definitions, "name");
   const parentTypes: string[] = [];
   const formArrayMethods: string[] = [];
-  const formDefinition = walkParamOrProp(
-    params,
-    undefined,
-    definitionsMap,
+
+  const ctx: FormGenerationContext = {
+    definitions: definitionsMap,
     parentTypes,
-    `this.${formName}`,
+    control: `this.${formName}`,
     formArrayMethods,
-    "value",
-    "value",
+    formValue: "value",
+    formValueIF: "value",
     formArrayReset,
     formArrayPatch,
     readOnly,
-    config
-  );
+    config,
+    formArrayParams: "",
+    subArrayReset: [],
+    subArrayPatch: [],
+    parent: "",
+    parents: "",
+    nameParents: "",
+  };
 
+  const formDefinition = walkParamOrProp(params, undefined, ctx);
+
+  // Untyped forms: annotate the field as plain FormGroup so its structural type
+  // is widened to FormGroup<any>; otherwise `.get('a.b')` string paths hit the
+  // typed-FormGroup overload union (TS2349 "not callable"). Typed forms keep the
+  // inferred structural type on purpose.
+  const formType = config.typedForms ? "" : ": FormGroup";
   let res = indent(
-    `${formName} = new FormGroup({\n${formDefinition}\n});\n`,
-    1
+    `${formName}${formType} = new FormGroup({\n${formDefinition}\n});\n`,
+    1,
   );
-  res += indent("constructor(\n");
-  res += indent(`apiConfigService: APIConfigService,\n`, 2);
-  res += indent(`ngZone: NgZone,\n`, 2);
-  res += indent(`private service: ${name}Service,\n`, 2);
-  res += indent(") {\n");
 
-  res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
-
-  res += indent(`this.init();\n`, 2);
-  res += indent("}\n");
+  if (config.standalone) {
+    res += indent("constructor(\n");
+    res += indent(`private service: ${name}Service,\n`, 2);
+    res += indent(") {\n");
+    res += indent(`const apiConfigService = inject(APIConfigService);\n`, 2);
+    res += indent(`const ngZone = inject(NgZone, { optional: true });\n`, 2);
+    res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
+    res += indent(`this.init();\n`, 2);
+    res += indent("}\n");
+  } else {
+    res += indent("constructor(\n");
+    res += indent(`apiConfigService: APIConfigService,\n`, 2);
+    res += indent(`ngZone: NgZone,\n`, 2);
+    res += indent(`private service: ${name}Service,\n`, 2);
+    res += indent(") {\n");
+    res += indent(`super('${className}', apiConfigService, ngZone);\n`, 2);
+    res += indent(`this.init();\n`, 2);
+    res += indent("}\n");
+  }
   res += "\n";
 
-  for (const method in formArrayMethods) {
-    res += formArrayMethods[method];
+  for (const method of formArrayMethods) {
+    res += method;
     res += "\n";
   }
 
@@ -193,22 +271,7 @@ function getConstructor(
 function walkParamOrProp(
   definition: Parameter[] | ProcessedDefinition,
   path: string[] = [],
-  definitions: _.Dictionary<ProcessedDefinition[]>,
-  parentTypes: string[],
-  control: string,
-  formArrayMethods: string[],
-  formValue: string,
-  formValueIF: string,
-  formArrayReset: string[],
-  formArrayPatch: string[],
-  readOnly: string,
-  config: Config,
-  formArrayParams = "",
-  subArrayReset: string[] = [],
-  subArrayPatch: string[] = [],
-  parent = "",
-  parents = "",
-  nameParents = ""
+  ctx: FormGenerationContext,
 ): string {
   const res: string[] = [];
   let schema: Record<string, Schema>;
@@ -237,7 +300,7 @@ function walkParamOrProp(
     const ref = param.$ref;
 
     // break type definition chain with cycle
-    if (parentTypes.indexOf(ref) >= 0) return;
+    if (ctx.parentTypes.indexOf(ref) >= 0) return;
 
     const name = paramName;
     const newPath = [...path, name];
@@ -245,13 +308,19 @@ function walkParamOrProp(
     const isNullable = nullable && nullable.includes(name);
 
     let newParentTypes: string[] = [];
-    if (ref) newParentTypes = [...parentTypes, ref];
+    if (ref) newParentTypes = [...ctx.parentTypes, ref];
 
-    if (readOnly && name.endsWith(readOnly)) {
+    if (ctx.readOnly && name.endsWith(ctx.readOnly)) {
       param.readOnly = true;
     }
 
     if (!param.readOnly || name === "id") {
+      const childCtx: FormGenerationContext = {
+        ...ctx,
+        parentTypes: ref ? newParentTypes : ctx.parentTypes,
+        formValueIF: `${ctx.formValueIF} && ${ctx.formValue}['${name}']`,
+      };
+
       const fieldDefinition = makeField(
         param,
         ref,
@@ -259,22 +328,7 @@ function walkParamOrProp(
         newPath,
         isRequired,
         isNullable,
-        definitions,
-        newParentTypes,
-        `${control}['controls']['${name}']`,
-        formArrayMethods,
-        formValue + `['${name}']`,
-        `${formValueIF} && ${formValue}['${name}']`,
-        formArrayReset,
-        formArrayPatch,
-        formArrayParams,
-        subArrayReset,
-        subArrayPatch,
-        parent,
-        parents,
-        nameParents,
-        readOnly,
-        config
+        childCtx,
       );
 
       res.push(fieldDefinition);
@@ -291,22 +345,7 @@ function makeField(
   path: string[],
   required: boolean,
   nullable: boolean,
-  definitions: _.Dictionary<ProcessedDefinition[]>,
-  parentTypes: string[],
-  formControl: string,
-  formArrayMethods: string[],
-  formValue: string,
-  formValueIF: string,
-  formArrayReset: string[],
-  formArrayPatch: string[],
-  formArrayParams: string,
-  subArrayReset: string[],
-  subArrayPatch: string[],
-  parent: string,
-  parents: string,
-  nameParents = "",
-  readOnly: string,
-  config: Config
+  ctx: FormGenerationContext,
 ): string {
   let definition: ProcessedDefinition;
   let type = param.type;
@@ -321,169 +360,205 @@ function makeField(
 
     // use helper method and store type definition to add new array items
     if (type === "array") {
-      if (param.items.type) {
+      if (
+        param.items &&
+        param.items.type &&
+        param.items.type !== "object" &&
+        !param.items.properties
+      ) {
+        // CASO A: array of primitives (string[], number[])
         control = "FormControl";
         initializer = "[]";
       } else {
-        const refType = param.items.$ref.replace(/^#\/definitions\//, "");
-        definition = definitions[normalizeDef(refType)][0];
-        const mySubArrayReset: string[] = [];
-        const mySubArrayPatch: string[] = [];
-        const fields = walkParamOrProp(
-          definition,
-          path,
-          definitions,
-          parentTypes,
-          formControl + `['controls'][${name}]`,
-          formArrayMethods,
-          formValue + `[${name}]`,
-          formValueIF,
-          formArrayReset,
-          formArrayPatch,
-          readOnly,
-          config,
-          formArrayParams + name + ": number" + ", ",
-          mySubArrayReset,
-          mySubArrayPatch,
-          name,
-          parents + name + ", ",
-          nameParents + _.upperFirst(_.camelCase(name.replace("_", "-")))
-        );
-        control = "FormArray";
-        if (config.typedForms) {
-          control = "UntypedFormArray";
+        // Determine definition for FormArray: $ref (CASO B) or inline (CASO C)
+        if (param.items && param.items.$ref) {
+          // CASO B: array of $ref objects
+          const refType = param.items.$ref.replace(
+            /^#\/(definitions|components\/schemas)\//,
+            "",
+          );
+          const defLookup = ctx.definitions[normalizeDef(refType)];
+          if (!defLookup || !defLookup.length) {
+            out(
+              `Warning: definition '${refType}' not found for array items.$ref, treating as primitive array`,
+              TermColors.red,
+            );
+            control = "FormControl";
+            initializer = "[]";
+          } else {
+            definition = defLookup[0];
+          }
+        } else if (
+          param.items &&
+          (param.items.properties || param.items.type === "object")
+        ) {
+          // CASO C: array of inline objects (items.properties without $ref)
+          definition = {
+            name,
+            def: {
+              properties: param.items.properties || {},
+              required: param.items.required,
+            },
+          } as any;
         }
-        initializer = `[]`;
-        let addMethod = "";
-        addMethod += indent(
-          `public add${nameParents}${_.upperFirst(
-            _.camelCase(name.replace("_", "-"))
-          )}(${formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`
-        );
-        addMethod += indent(`const control = <${control}>${formControl};\n`, 2);
-        addMethod += indent(
-          `const fg = new FormGroup({\n${fields}\n}, []);\n`,
-          2
-        );
-        addMethod += indent(
-          `__utils.addField(control,${name}, fg, position, value);\n`,
-          2
-        );
 
-        addMethod += indent(`}\n`);
-        formArrayMethods.push(addMethod);
+        if (definition) {
+          const mySubArrayReset: string[] = [];
+          const mySubArrayPatch: string[] = [];
 
-        let removeMethod = "";
-        removeMethod += indent(
-          `public remove${nameParents}${_.upperFirst(
-            _.camelCase(name.replace("_", "-"))
-          )}(${formArrayParams} i: number): void {\n`
-        );
-        removeMethod += indent(
-          `const control = <${control}>${formControl};\n`,
-          2
-        );
-        removeMethod += indent(`control.removeAt(i);\n`, 2);
-        removeMethod += indent(`}\n`);
-        formArrayMethods.push(removeMethod);
+          const childCtx: FormGenerationContext = {
+            ...ctx,
+            control:
+              ctx.control + `['controls']['${name}']` + `['controls'][${name}]`,
+            formValue: ctx.formValue + `['${name}']` + `[${name}]`,
+            formArrayParams: ctx.formArrayParams + name + ": number" + ", ",
+            subArrayReset: mySubArrayReset,
+            subArrayPatch: mySubArrayPatch,
+            parent: name,
+            parents: ctx.parents + name + ", ",
+            nameParents:
+              ctx.nameParents +
+              _.upperFirst(_.camelCase(name.replace("_", "-"))),
+          };
 
-        if (formArrayParams === "") {
-          let resetMethod = "";
-          resetMethod += indent(
-            `while ((<${control}>${formControl}).length) {\n`
-          );
-          resetMethod += indent(
-            `this.remove${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(0);\n`,
-            2
-          );
-          resetMethod += indent(`}\n`);
-          resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(
-            `this.add${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(${formValue}.length);\n`,
-            2
-          );
-          mySubArrayReset.forEach((subarray) => {
-            resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
-          });
-          resetMethod += indent(`}\n`);
-          formArrayReset.push(resetMethod);
+          const fields = walkParamOrProp(definition, path, childCtx);
+          control = "FormArray";
+          if (ctx.config.typedForms) {
+            control = "UntypedFormArray";
+          }
+          initializer = `[]`;
 
-          let patchMethod = "";
-          patchMethod += indent(`if (${formValueIF}) {\n`);
-          patchMethod += indent(
-            `while (this.form.${formValue}.length > 0) {\n`,
-            2
-          );
-          patchMethod += indent(
-            `this.remove${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(0);\n`,
-            3
-          );
-          patchMethod += indent(`}\n`, 2);
-          patchMethod += indent(
-            `if (${formValue}.length > this.form.${formValue}.length) {\n`,
-            2
-          );
-          patchMethod += indent(
-            `this.add${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(${formValue}.length - this.form.${formValue}.length);\n`,
-            3
-          );
-          patchMethod += indent(`}\n`, 2);
-          mySubArrayPatch.forEach((subarray) => {
-            patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
-          });
-          patchMethod += indent(`}\n`);
-          formArrayPatch.push(patchMethod);
-        } else {
-          let resetMethod = "";
-          resetMethod += `(${parent}_object, ${parent}) => {\n`;
-          resetMethod += indent(`if (${formValueIF}) {\n`);
-          resetMethod += indent(
-            `this.add${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(${parents}${formValue}.length);\n`,
-            2
-          );
-          mySubArrayReset.forEach((subarray) => {
-            resetMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
-          });
-          resetMethod += indent(`}\n`);
-          resetMethod += `}`;
-          subArrayReset.push(resetMethod);
+          const camelName = _.upperFirst(_.camelCase(name.replace("_", "-")));
+          const fullName = ctx.nameParents + camelName;
 
-          let patchMethod = "";
-          patchMethod += `(${parent}_object, ${parent}) => {\n`;
-          patchMethod += indent(`if (${formValueIF}) {\n`);
-          patchMethod += indent(
-            `if (${formValue}.length > this.form.${formValue}.length) {\n`,
-            2
+          let addMethod = "";
+          addMethod += indent(
+            `public add${fullName}(${ctx.formArrayParams} ${name}: number = 1, position?: number, value?: any): void {\n`,
           );
-          patchMethod += indent(
-            `this.add${nameParents}${_.upperFirst(
-              _.camelCase(name.replace("_", "-"))
-            )}(${parents}${formValue}.length - this.form.${formValue}.length);\n`,
-            3
+          addMethod += indent(
+            `const control = <${control}>${ctx.control}['controls']['${name}'];\n`,
+            2,
           );
-          patchMethod += indent(`}\n`, 2);
-          mySubArrayPatch.forEach((subarray) => {
-            patchMethod += indent(`${formValue}.forEach(${subarray});\n`, 2);
-          });
-          patchMethod += indent(`}\n`);
-          patchMethod += `}`;
-          subArrayPatch.push(patchMethod);
+          addMethod += indent(
+            `const fg = new FormGroup({\n${fields}\n}, []);\n`,
+            2,
+          );
+          addMethod += indent(
+            `__utils.addField(control,${name}, fg, position, value);\n`,
+            2,
+          );
+
+          addMethod += indent(`}\n`);
+          ctx.formArrayMethods.push(addMethod);
+
+          let removeMethod = "";
+          removeMethod += indent(
+            `public remove${fullName}(${ctx.formArrayParams} i: number): void {\n`,
+          );
+          removeMethod += indent(
+            `const control = <${control}>${ctx.control}['controls']['${name}'];\n`,
+            2,
+          );
+          removeMethod += indent(`control.removeAt(i);\n`, 2);
+          removeMethod += indent(`}\n`);
+          ctx.formArrayMethods.push(removeMethod);
+
+          if (ctx.formArrayParams === "") {
+            let resetMethod = "";
+            resetMethod += indent(
+              `while ((<${control}>${ctx.control}['controls']['${name}']).length) {\n`,
+            );
+            resetMethod += indent(`this.remove${fullName}(0);\n`, 2);
+            resetMethod += indent(`}\n`);
+            resetMethod += indent(`if (${ctx.formValueIF}) {\n`);
+            resetMethod += indent(
+              `this.add${fullName}(${ctx.formValue}['${name}'].length);\n`,
+              2,
+            );
+            for (const subarray of mySubArrayReset) {
+              resetMethod += indent(
+                `${ctx.formValue}['${name}'].forEach(${subarray});\n`,
+                2,
+              );
+            }
+            resetMethod += indent(`}\n`);
+            ctx.formArrayReset.push(resetMethod);
+
+            let patchMethod = "";
+            patchMethod += indent(`if (${ctx.formValueIF}) {\n`);
+            patchMethod += indent(
+              `while (this.form.${ctx.formValue}['${name}'].length > 0) {\n`,
+              2,
+            );
+            patchMethod += indent(`this.remove${fullName}(0);\n`, 3);
+            patchMethod += indent(`}\n`, 2);
+            patchMethod += indent(
+              `if (${ctx.formValue}['${name}'].length > this.form.${ctx.formValue}['${name}'].length) {\n`,
+              2,
+            );
+            patchMethod += indent(
+              `this.add${fullName}(${ctx.formValue}['${name}'].length - this.form.${ctx.formValue}['${name}'].length);\n`,
+              3,
+            );
+            patchMethod += indent(`}\n`, 2);
+            for (const subarray of mySubArrayPatch) {
+              patchMethod += indent(
+                `${ctx.formValue}['${name}'].forEach(${subarray});\n`,
+                2,
+              );
+            }
+            patchMethod += indent(`}\n`);
+            ctx.formArrayPatch.push(patchMethod);
+          } else {
+            let resetMethod = "";
+            resetMethod += `(${ctx.parent}_object, ${ctx.parent}) => {\n`;
+            resetMethod += indent(`if (${ctx.formValueIF}) {\n`);
+            resetMethod += indent(
+              `this.add${fullName}(${ctx.parents}${ctx.formValue}['${name}'].length);\n`,
+              2,
+            );
+            for (const subarray of mySubArrayReset) {
+              resetMethod += indent(
+                `${ctx.formValue}['${name}'].forEach(${subarray});\n`,
+                2,
+              );
+            }
+            resetMethod += indent(`}\n`);
+            resetMethod += `}`;
+            ctx.subArrayReset.push(resetMethod);
+
+            let patchMethod = "";
+            patchMethod += `(${ctx.parent}_object, ${ctx.parent}) => {\n`;
+            patchMethod += indent(`if (${ctx.formValueIF}) {\n`);
+            patchMethod += indent(
+              `if (${ctx.formValue}['${name}'].length > this.form.${ctx.formValue}['${name}'].length) {\n`,
+              2,
+            );
+            patchMethod += indent(
+              `this.add${fullName}(${ctx.parents}${ctx.formValue}['${name}'].length - this.form.${ctx.formValue}['${name}'].length);\n`,
+              3,
+            );
+            patchMethod += indent(`}\n`, 2);
+            for (const subarray of mySubArrayPatch) {
+              patchMethod += indent(
+                `${ctx.formValue}['${name}'].forEach(${subarray});\n`,
+                2,
+              );
+            }
+            patchMethod += indent(`}\n`);
+            patchMethod += `}`;
+            ctx.subArrayPatch.push(patchMethod);
+          }
+        } else if (!control) {
+          // Fallback: treat as primitive array
+          control = "FormControl";
+          initializer = "[]";
         }
       }
     } else {
-      let isNullable = nullable ? " | null" : "";
+      const isNullable = nullable ? " | null" : "";
       control = "FormControl";
-      if (config.typedForms) {
+      if (ctx.config.typedForms) {
         control += `<${type}${isNullable}>`;
       }
       initializer =
@@ -493,31 +568,48 @@ function makeField(
       initializer = `{value: ${initializer}, disabled: false}`;
     }
   } else {
-    const refType = ref.replace(/^#\/definitions\//, "");
-    definition = definitions[normalizeDef(refType)][0];
+    const refType = ref.replace(/^#\/(definitions|components\/schemas)\//, "");
+    const defLookup = ctx.definitions[normalizeDef(refType)];
+    if (!defLookup || !defLookup.length) {
+      out(
+        `Warning: definition '${refType}' not found for $ref, generating empty FormGroup`,
+        TermColors.red,
+      );
+      control = "FormGroup";
+      initializer = "{}";
+    } else if (Array.isArray((defLookup[0].def as { enum?: unknown[] }).enum)) {
+      // Enum $ref (drf-spectacular/OAS3 hoists enums into named component
+      // schemas, e.g. DeactivationReasonEnum). These are SCALAR values, not
+      // objects — emit a FormControl. Emitting a FormGroup here produced an
+      // empty `{}` that the backend rejects with "'{}' is not a valid option".
+      const enumDefType = (defLookup[0].def as { type?: string }).type;
+      const enumType =
+        enumDefType === "integer" || enumDefType === "number"
+          ? "number"
+          : "string";
+      control = "FormControl";
+      if (ctx.config.typedForms) {
+        control += `<${enumType}${nullable ? " | null" : ""}>`;
+      }
+      const enumDefault =
+        typeof param.default === "string"
+          ? `'${param.default}'`
+          : param.default;
+      initializer = `{value: ${enumDefault}, disabled: false}`;
+    } else {
+      definition = defLookup[0];
 
-    control = "FormGroup";
-    const fields = walkParamOrProp(
-      definition,
-      path,
-      definitions,
-      parentTypes,
-      formControl,
-      formArrayMethods,
-      formValue,
-      formValueIF,
-      formArrayReset,
-      formArrayPatch,
-      readOnly,
-      config,
-      formArrayParams,
-      subArrayReset,
-      subArrayPatch,
-      parent,
-      parents,
-      nameParents + _.upperFirst(_.camelCase(name.replace("_", "-")))
-    );
-    initializer = `{\n${fields}\n}`;
+      control = "FormGroup";
+      const childCtx: FormGenerationContext = {
+        ...ctx,
+        control: ctx.control + `['controls']['${name}']`,
+        formValue: ctx.formValue + `['${name}']`,
+        nameParents:
+          ctx.nameParents + _.upperFirst(_.camelCase(name.replace("_", "-"))),
+      };
+      const fields = walkParamOrProp(definition, path, childCtx);
+      initializer = `{\n${fields}\n}`;
+    }
   }
 
   const validators = getValidators(param);
@@ -526,21 +618,57 @@ function makeField(
   return `${name}: new ${control}(${initializer}, [${validators.join(", ")}]),`;
 }
 
-function getValidators(param: Parameter | Schema) {
+export function getValidators(param: Parameter | Schema) {
   const validators: string[] = [];
 
   if (param.format && param.format === "email")
     validators.push("Validators.email");
 
-  if (param.maximum) validators.push(`Validators.max(${param.maximum})`);
-  if (param.minimum) validators.push(`Validators.min(${param.minimum})`);
+  if (param.maximum !== undefined)
+    validators.push(`Validators.max(${param.maximum})`);
+  if (param.minimum !== undefined)
+    validators.push(`Validators.min(${param.minimum})`);
 
-  if (param.maxLength)
+  // exclusiveMinimum: OAS 3.0 uses boolean (combine with minimum), OAS 3.1 uses number
+  if (param.exclusiveMinimum !== undefined) {
+    if (typeof param.exclusiveMinimum === "number") {
+      // OAS 3.1: exclusiveMinimum is the actual boundary value
+      // Angular Validators.min is inclusive (>=), so we use the value directly
+      // since there's no "exclusiveMin" validator in Angular
+      validators.push(`Validators.min(${param.exclusiveMinimum})`);
+    } else if (param.exclusiveMinimum === true && param.minimum !== undefined) {
+      // OAS 3.0: boolean flag means minimum is exclusive
+      validators.push(`Validators.min(${param.minimum + 1})`);
+    }
+  }
+  // exclusiveMaximum: OAS 3.0 uses boolean (combine with maximum), OAS 3.1 uses number
+  if (param.exclusiveMaximum !== undefined) {
+    if (typeof param.exclusiveMaximum === "number") {
+      validators.push(`Validators.max(${param.exclusiveMaximum})`);
+    } else if (param.exclusiveMaximum === true && param.maximum !== undefined) {
+      validators.push(`Validators.max(${param.maximum - 1})`);
+    }
+  }
+
+  if (param.maxLength !== undefined)
     validators.push(`Validators.maxLength(${param.maxLength})`);
-  if (param.minLength)
+  if (param.minLength !== undefined)
     validators.push(`Validators.minLength(${param.minLength})`);
 
   if (param.pattern) validators.push(`Validators.pattern(/${param.pattern}/)`);
+
+  // multipleOf: generate pattern validator for integer multiples
+  if (param.multipleOf !== undefined) {
+    validators.push(`__utils.multipleOfValidator(${param.multipleOf})`);
+  }
+
+  // minItems/maxItems: for FormArray length validation (applied as minLength/maxLength)
+  if (param.minItems !== undefined) {
+    validators.push(`Validators.minLength(${param.minItems})`);
+  }
+  if (param.maxItems !== undefined) {
+    validators.push(`Validators.maxLength(${param.maxItems})`);
+  }
 
   return validators;
 }
@@ -549,11 +677,11 @@ function getFormSubmitFunction(
   simpleName: string,
   paramGroups: Parameter[],
   methodName: string,
-  method: MethodOutput
+  method: MethodOutput,
 ) {
   let res = "";
   let type = method.responseDef.type;
-  let paramName =
+  const paramName =
     methodName === "patch" && method.paramGroups.body
       ? method.paramGroups.body[0].name
       : null;
@@ -566,31 +694,31 @@ function getFormSubmitFunction(
 
   if (methodName === "get") {
     res += indent(
-      `submit(value: typeof this.form.value | false = false, cache = true, only_cache = false): Observable<${type}> {\n`
+      `submit(value: typeof this.form.value | false = false, cache = true, only_cache = false, context?: HttpContext): Observable<${type}> {\n`,
     );
   } else {
     res += indent(
-      `submit(value: typeof this.form.value | false = false): Observable<${type}> {\n`
+      `submit(value: typeof this.form.value | false = false, context?: HttpContext): Observable<${type}> {\n`,
     );
   }
 
   res += indent(
     `const result = val => this.service.${simpleName}(${getSubmitFnParameters(
       "val",
-      paramGroups
-    )});\n`,
-    2
+      paramGroups,
+    )}${getSubmitFnParameters("val", paramGroups) ? ", " : ""}false, context);\n`,
+    2,
   );
 
   if (methodName === "get") {
     res += indent(
       `return this._submit('${type}', result, value, cache, only_cache );\n`,
-      2
+      2,
     );
   } else {
     res += indent(
       `return this._submit('${type}', result, '${paramName}', value, ${isPatch} );\n`,
-      2
+      2,
     );
   }
 
@@ -598,7 +726,7 @@ function getFormSubmitFunction(
   res += indent("\n\n");
 
   res += indent(
-    `listen(value: typeof this.form.value | false = false, submit: boolean = true): Observable<${type}> {\n`
+    `listen(value: typeof this.form.value | false = false, submit: boolean = true): Observable<${type}> {\n`,
   );
 
   res += indent("if (submit) {\n", 2);
@@ -620,21 +748,21 @@ function getFormResetFunction(
   formName: string,
   formArrayReset: string[],
   formArrayPatch: string[],
-  methodName: string
+  methodName: string,
 ) {
   let res = "";
 
   res += indent("reset(value?: typeof this.form.value): void {\n");
   res += indent(`this.form.reset();\n`, 2);
-  for (const i in formArrayReset) {
-    res += indent(formArrayReset[i]);
+  for (const resetEntry of formArrayReset) {
+    res += indent(resetEntry);
   }
   res += indent(`super.reset(value, ${methodName === "patch"}); \n`, 2);
   res += indent("}\n\n");
 
   res += indent("patch(value: typeof this.form.value): void {\n");
-  for (const i in formArrayPatch) {
-    res += indent(formArrayPatch[i]);
+  for (const patchEntry of formArrayPatch) {
+    res += indent(patchEntry);
   }
   res += indent(`this.${formName}.patchValue(value);\n`, 2);
   res += indent("}\n");

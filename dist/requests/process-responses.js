@@ -53,15 +53,20 @@ function processResponses(httpResponse, name, config) {
     return { type, format, enumDeclaration, usesGlobalType };
 }
 exports.processResponses = processResponses;
+const _emittedNestedExports = new Set();
 function processNestedSchemaDefinition(schema, name, config) {
     const definition = {
         properties: schema.properties,
         required: schema.required,
     };
     const processedDef = (0, definitions_1.processDefinition)(definition, `${name}`, config);
-    const filename = path.join(config.dest, `${conf.modelFile}.ts`);
-    const exportDefiniton = (0, definitions_1.createExport)(processedDef.name);
-    fs.appendFileSync(filename, `${exportDefiniton}\n`);
+    // Avoid duplicate exports in model.ts
+    if (!_emittedNestedExports.has(processedDef.name)) {
+        _emittedNestedExports.add(processedDef.name);
+        const filename = path.join(config.dest, `${conf.modelFile}.ts`);
+        const exportDefiniton = (0, definitions_1.createExport)(processedDef.name);
+        fs.appendFileSync(filename, `${exportDefiniton}\n`);
+    }
     return processedDef;
 }
 //# sourceMappingURL=process-responses.js.map

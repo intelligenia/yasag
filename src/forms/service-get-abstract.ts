@@ -8,9 +8,17 @@ import { writeFile } from "../utils";
  * @param config: global configuration for YASAG
  */
 export function createServiceGetAbstractClass(config: Config) {
+  const ngZoneType = config.standalone ? 'NgZone | null' : 'NgZone';
+  const sig = config.profile.signals;
+  const sigCoreImport = sig ? ', Signal' : '';
+  const sigInteropImport = sig ? `\n  import { toSignal } from '@angular/core/rxjs-interop';` : '';
+  const sigFields = sig ? `\n    loading!: Signal<boolean>;\n    serverErrors!: Signal<any>;` : '';
+  const sigInit = sig
+    ? `\n      this.loading = toSignal(this.loading$, { initialValue: false });\n      this.serverErrors = toSignal(this.serverErrors$);`
+    : '';
   const content = `
   import { FormGroup } from '@angular/forms';
-  import { NgZone } from '@angular/core';
+  import { NgZone${sigCoreImport} } from '@angular/core';${sigInteropImport}
   import { ReplaySubject, Observable, throwError } from 'rxjs';
   import { catchError, map } from 'rxjs/operators';
   import { environment } from 'environments/environment';
@@ -19,7 +27,7 @@ export function createServiceGetAbstractClass(config: Config) {
   export abstract class YASAGGetFormService<Type> {
     defaultValue: any;
     serverErrors$: Observable<any>;
-    loading$: Observable<boolean>;
+    loading$: Observable<boolean>;${sigFields}
     currentValue: any;
     patchInitialValue: any;
     form: FormGroup;
@@ -31,15 +39,23 @@ export function createServiceGetAbstractClass(config: Config) {
     protected cache: string;
 
 
-    constructor(className: string, protected  apiConfigService: APIConfigService, protected  ngZone: NgZone) {
+    constructor(className: string, protected  apiConfigService: APIConfigService, protected  ngZone: ${ngZoneType}) {
       this.cache = className;
+    }
+
+    private runInZone(fn: () => void): void {
+      if (this.ngZone) {
+        this.ngZone.run(fn);
+      } else {
+        fn();
+      }
     }
 
     init() {
       this.serverErrorsSubject = new ReplaySubject<any>(1);
       this.serverErrors$ = this.serverErrorsSubject.asObservable();
       this.loadingSubject = new ReplaySubject<boolean>(1);
-      this.loading$ = this.loadingSubject.asObservable();
+      this.loading$ = this.loadingSubject.asObservable();${sigInit}
       this.cacheSub = {};
       this.defaultValue = this.form.value;
     }
@@ -91,7 +107,7 @@ export function createServiceGetAbstractClass(config: Config) {
       let cacheFunction;
       if (type === "void") {
         cacheFunction = () => {
-          this.ngZone.run(() => {
+          this.runInZone(() => {
             subject.next(undefined);
             if (this.apiConfigService.listeners[this.cache + JSON.stringify(value)]) {
               this.apiConfigService.listeners[this.cache + JSON.stringify(value)].subject.next();
@@ -107,7 +123,7 @@ export function createServiceGetAbstractClass(config: Config) {
       }else {
         cacheFunction = val => {
 
-          this.ngZone.run(() => {
+          this.runInZone(() => {
             if (type !== 'Blob') {
               val = JSON.parse(JSON.stringify(val));
             }
@@ -141,7 +157,7 @@ export function createServiceGetAbstractClass(config: Config) {
           } else {
             // The backend returned an unsuccessful response code.
             // The response body may contain clues as to what went wrong,
-            this.ngZone.run(() => {
+            this.runInZone(() => {
               this.serverErrorsSubject.next(error.error);
               subject.error(error);
               subject.complete();

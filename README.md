@@ -1,8 +1,60 @@
+# yasag
+
 ## Purpose
 
 Generate minimalistic TypeScript API layer for Angular with full type reflection of backend model.
-- Source: [swagger scheme OpenAPI 2.0](https://swagger.io/specification/)
-- Destination: [Angular-cli](https://cli.angular.io/) based [Angular 7, 8, 9, 10, 11](https://angular.io/) app.
+- Source: **Swagger 2.0, OpenAPI 3.0 and 3.1**, as **JSON or YAML** (auto-detected & normalized).
+- Destination: [Angular-cli](https://cli.angular.io/) based Angular app.
+
+## Input formats
+
+The spec version is auto-detected (`src/adapters/openapi-detector.ts`) and normalized to the internal
+Swagger-2 shape (`src/adapters/*-normalizer.ts`); the downstream generator is version-agnostic.
+
+```bash
+# JSON or YAML, Swagger 2 or OpenAPI 3.0/3.1 — same command
+node dist/index.js -s api.yaml -d src/api
+node dist/index.js -s swagger.json -d src/api --no-store
+```
+
+OpenAPI 3 handling covered: `servers` (incl. URL variables, relative & protocol-relative),
+`components.schemas`/`parameters`/`responses`/`requestBodies` `$ref` resolution, `requestBody`
+(JSON, multipart/binary incl. array-of-file), `allOf` merge, `oneOf`/`anyOf`, `discriminator`,
+`nullable` (3.0) and `type: [T, "null"]` (3.1).
+
+## Angular targets (`--target`)
+
+A `TargetProfile` (`src/target-profile.ts`) selects the emitted idiom set. Default `ng22`.
+
+| flag | standalone | inject() | providedIn:'root' | signals | resource readers | typed forms |
+|------|:--:|:--:|:--:|:--:|:--:|:--:|
+| `ng22` (default) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `ng16` | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| `legacy` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+```bash
+node dist/index.js -s api.yaml -d src/api --target ng22    # modern (default)
+node dist/index.js -s api.yaml -d src/api --target ng16    # standalone+inject, no signals/httpResource
+node dist/index.js -s api.yaml -d src/api --target legacy  # NgModules + constructor DI
+```
+
+The modern targets are **additive**: they keep every Observable method and add signal state
+(`toSignal`) plus `<op>Resource` GET readers (`rxResource` delegating to the Observable method) — no
+functionality is lost in the translation. `--untyped-forms` overrides typed-form defaults.
+
+Full guide: `docs/generator.md`.
+
+## Develop
+
+```bash
+npm install
+npm run check       # lint (eslint) + build (tsc 5.9) + test (node:test via tsx)
+npm run e2e:setup   # install Angular 22/18/16 for the compile matrix (one-off)
+npm run e2e:matrix  # generate per target -> tsc --noEmit against its Angular
+```
+
+Tests live in `tests/`. `tests/matrix.e2e.test.ts` compiles each target against its pinned Angular
+(ng22@22, ng16@18, legacy@16); it skips cleanly until `e2e:setup` runs.
 
 ## What is generated
 
@@ -234,18 +286,5 @@ generated inside Order.ts, and also both FormServices will be generaqted in /for
 * this project is a fork of `swagger-angular-generator` (https://github.com/jnwltr/swagger-angular-generator), 
   so YASAG could not exist without the initial help of Jan Walter
 
-
-## Demo APP
-
-In the folder `/demo/petstore` you can find a complete Angular demo using the public API published by swagger.io 
-on http://petstore.swagger.io
-
-The swagger JSON schema has been downloaded on the folder `/demo/petstore/swagger`
-
-To generate the API connection files using YASAG, follow the next steps:
-
-1. Go to the folder `/demo/petstore`
-1. Execute the command `npm run apigen`
-1. Now you can execute `npm run start` to try the demo
 
 ### _Pull requests are welcome!_

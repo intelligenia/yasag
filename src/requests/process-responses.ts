@@ -43,7 +43,7 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
   }
 
   const property = _.map(properties, 'property');
-  let format_array = _.map(properties, 'format');
+  const format_array = _.map(properties, 'format');
   const enumDeclaration = _.map(properties, 'enumDeclaration').filter(Boolean).join('\n\n');
   const usesGlobalType = properties.some(p => !p.native);
 
@@ -59,6 +59,8 @@ export function processResponses(httpResponse: HttpResponse, name: string, confi
   return {type, format, enumDeclaration, usesGlobalType};
 }
 
+const _emittedNestedExports = new Set<string>();
+
 function processNestedSchemaDefinition(schema: Schema, name: string, config: Config): ProcessedDefinition {
   const definition: Definition = {
     properties: schema.properties,
@@ -66,9 +68,14 @@ function processNestedSchemaDefinition(schema: Schema, name: string, config: Con
   };
 
   const processedDef = processDefinition(definition, `${name}`, config);
-  const filename = path.join(config.dest, `${conf.modelFile}.ts`);
-  const exportDefiniton = createExport(processedDef.name);
-  fs.appendFileSync(filename, `${exportDefiniton}\n`);
+
+  // Avoid duplicate exports in model.ts
+  if (!_emittedNestedExports.has(processedDef.name)) {
+    _emittedNestedExports.add(processedDef.name);
+    const filename = path.join(config.dest, `${conf.modelFile}.ts`);
+    const exportDefiniton = createExport(processedDef.name);
+    fs.appendFileSync(filename, `${exportDefiniton}\n`);
+  }
 
   return processedDef;
 }

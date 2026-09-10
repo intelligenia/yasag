@@ -34,3 +34,32 @@ node_modules/
 # testing input/output
 conf/
 src/api/
+
+# e2e generation temp
+.e2e-tmp/
+.e2e-out/
+
+.emit-ng22/
+.emit-ng16/
+.emit-legacy/
+.mod-ng22/
+.mod-ng16/
+.mod-legacy/
+.smoke/
+.sig-ng22/
+.sig-ng16/
+.sig-legacy/
+.par-ng22/
+.par-ng16/
+.par-legacy/
+.tf-ng22-false/
+.tf-ng22-true/
+.tf-legacy-false/
+.s1/
+.s2/
+tests/e2e-consumers/*/node_modules/
+tests/e2e-consumers/*/gen/
+tests/e2e-consumers/*/package-lock.json
+.ca-ng22/
+.ca-ng16/
+.ca-legacy/

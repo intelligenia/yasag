@@ -18,7 +18,9 @@ program
     .option("-t, --typed-forms", `Add types to FormControls, default: ${conf.typeForms}`)
     .option("-r, --read-only <ending>", `Omit attributes ending by <ending> in PUT, POST and PATCH methods, default: None`)
     .option("-c, --environment-cache <environmentCache>", `Name of the environment variable for the cache size configuration, default name: ${conf.environmentCache}, default size 1000 elements`)
+    .option("-a, --clean-architecture", "Generate clean architecture layers (domain, data, usecases)")
+    .option("--standalone", "Generate standalone-compatible code for Angular 17+ (providedIn: 'root', no NgModules)")
     .parse(process.argv);
 const options = program.opts();
-(0, generate_1.generate)(options.src, options.dest, options.store, options.unwrapSingleParamMethods, options.swaggerUrlPath, options.omitVersion, options.omitBasepath, options.environmentVar, options.omitHeader, options.typedForms, options.readOnly, options.environmentCache);
+(0, generate_1.generate)(options.src, options.dest, options.store, options.unwrapSingleParamMethods, options.swaggerUrlPath, options.omitVersion, options.omitBasepath, options.environmentVar, options.omitHeader, options.typedForms, options.readOnly, options.environmentCache, options.cleanArchitecture, options.standalone);
 //# sourceMappingURL=index.js.map
